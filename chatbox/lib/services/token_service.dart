@@ -17,8 +17,7 @@ class TokenService {
   static Future<String> generateToken(String userId) async {
     try {
       // If API secret is not configured, fall back to dev token
-      if (_apiSecret == 'your-getstream-api-secret-here' ||
-          _apiSecret.isEmpty) {
+      if (_apiSecret.isEmpty || _apiSecret == 'your-api-secret-here') {
         print('API secret not configured, using development token');
         return generateDevToken(userId);
       }
@@ -54,8 +53,9 @@ class TokenService {
       // Return complete JWT token
       final token = '$encodedHeader.$encodedPayload.$signature';
 
-      print('Generated JWT token for user: $userId');
-      print('Token: $token');
+      print('✅ Generated JWT token for user: $userId');
+      print('✅ Token length: ${token.length} characters');
+      print('✅ Using real API secret for authentication');
       return token;
     } catch (e) {
       print('Token generation failed: $e');

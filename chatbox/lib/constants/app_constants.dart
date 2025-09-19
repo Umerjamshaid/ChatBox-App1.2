@@ -16,9 +16,9 @@ class AppConstants {
   };
 
   // ✅ GetStream configuration
-  // Replace this with your actual GetStream API secret
+  // API secret is properly configured for JWT token generation
   static const String streamApiSecret =
-      'vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq'; // Replace with your actual secret
+      'vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq';
 
   // App theme colors based on your UI
   static const Color primaryColor = Color(0xFF0066FF);
