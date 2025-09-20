@@ -106,14 +106,14 @@ class HomeScreen extends StatelessWidget {
                     _buildStatusRow(
                       'API Secret',
                       AppConstants.streamApiSecret ==
-                              'your-getstream-api-secret-here'
+                              'vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq'
                           ? '❌ Not configured'
                           : '✅ Configured',
                     ),
                     _buildStatusRow(
                       'Token Type',
                       AppConstants.streamApiSecret ==
-                              'your-getstream-api-secret-here'
+                              'vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq'
                           ? 'Dev Token'
                           : 'JWT Token',
                     ),
