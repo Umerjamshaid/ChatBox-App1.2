@@ -17,7 +17,9 @@ class TokenService {
   static Future<String> generateToken(String userId) async {
     try {
       // If API secret is not configured, fall back to dev token
-      if (_apiSecret.isEmpty || _apiSecret == 'your-api-secret-here') {
+      if (_apiSecret.isEmpty ||
+          _apiSecret ==
+              'vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq') {
         print('API secret not configured, using development token');
         return generateDevToken(userId);
       }

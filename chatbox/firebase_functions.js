@@ -5,8 +5,8 @@ const functions = require('firebase-functions');
 const jwt = require('jsonwebtoken');
 
 // GetStream configuration
-const STREAM_API_KEY = functions.config().getstream?.api_key || 'your-api-key';
-const STREAM_API_SECRET = functions.config().getstream?.api_secret || 'your-api-secret';
+const STREAM_API_KEY = functions.config().getstream?.api_key || 'h3bkh4ayyxaz';
+const STREAM_API_SECRET = functions.config().getstream?.api_secret || 'your-api-vvpx83p7p86q7mgt7psaqw7hfjq86hqejzugxsezxqfxyfgz2sffvvgmv6q79qbq';
 
 // Generate JWT token for GetStream
 exports.generateStreamToken = functions.https.onCall(async (data, context) => {
