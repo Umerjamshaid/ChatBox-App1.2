@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chatbox/constants/colors.dart';
+import 'package:chatbox/screens/settings/notification_analytics_screen.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -21,6 +22,10 @@ class _NotificationSettingsScreenState
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
   String _notificationSound = 'default';
+  bool _dndEnabled = false;
+  TimeOfDay? _dndStartTime;
+  TimeOfDay? _dndEndTime;
+  bool _showMessagePreview = true;
 
   @override
   void initState() {
@@ -39,6 +44,27 @@ class _NotificationSettingsScreenState
       _soundEnabled = prefs.getBool('sound_enabled') ?? true;
       _vibrationEnabled = prefs.getBool('vibration_enabled') ?? true;
       _notificationSound = prefs.getString('notification_sound') ?? 'default';
+      _dndEnabled = prefs.getBool('dnd_enabled') ?? false;
+      _showMessagePreview = prefs.getBool('show_message_preview') ?? true;
+
+      final dndStart = prefs.getString('dnd_start_time');
+      final dndEnd = prefs.getString('dnd_end_time');
+
+      if (dndStart != null) {
+        final parts = dndStart.split(':');
+        _dndStartTime = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
+
+      if (dndEnd != null) {
+        final parts = dndEnd.split(':');
+        _dndEndTime = TimeOfDay(
+          hour: int.parse(parts[0]),
+          minute: int.parse(parts[1]),
+        );
+      }
     });
   }
 
@@ -150,28 +176,55 @@ class _NotificationSettingsScreenState
 
           // Advanced Settings Section
           _buildSectionHeader('Advanced'),
-          ListTile(
-            title: const Text('Do Not Disturb'),
-            subtitle: const Text('Set quiet hours'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: Navigate to DND settings
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Do Not Disturb coming soon!')),
-              );
+          _buildSwitchTile(
+            title: 'Do Not Disturb',
+            subtitle: 'Silence notifications during specified hours',
+            value: _dndEnabled,
+            onChanged: (value) {
+              setState(() => _dndEnabled = value);
+              _saveSetting('dnd_enabled', value);
+            },
+          ),
+
+          if (_dndEnabled) ...[
+            ListTile(
+              title: const Text('Quiet Hours Start'),
+              subtitle: Text(_dndStartTime?.format(context) ?? 'Not set'),
+              trailing: const Icon(Icons.access_time),
+              onTap: () => _selectTime(true),
+            ),
+            ListTile(
+              title: const Text('Quiet Hours End'),
+              subtitle: Text(_dndEndTime?.format(context) ?? 'Not set'),
+              trailing: const Icon(Icons.access_time),
+              onTap: () => _selectTime(false),
+            ),
+          ],
+
+          _buildSwitchTile(
+            title: 'Message Preview',
+            subtitle: 'Show message content in notifications',
+            value: _showMessagePreview,
+            onChanged: (value) {
+              setState(() => _showMessagePreview = value);
+              _saveSetting('show_message_preview', value);
             },
           ),
 
           ListTile(
-            title: const Text('Notification Preview'),
-            subtitle: const Text('Show message preview in notifications'),
-            trailing: Switch(
-              value: true, // TODO: Load from settings
-              onChanged: (value) {
-                // TODO: Save setting
-              },
-              activeColor: AppColors.primary,
+            title: const Text('Notification Analytics'),
+            subtitle: const Text(
+              'View notification delivery and engagement stats',
             ),
+            trailing: const Icon(Icons.analytics),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationAnalyticsScreen(),
+                ),
+              );
+            },
           ),
 
           const SizedBox(height: 32),
@@ -327,5 +380,26 @@ class _NotificationSettingsScreenState
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  Future<void> _selectTime(bool isStartTime) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: isStartTime
+          ? (_dndStartTime ?? const TimeOfDay(hour: 22, minute: 0))
+          : (_dndEndTime ?? const TimeOfDay(hour: 8, minute: 0)),
+    );
+
+    if (picked != null) {
+      setState(() {
+        if (isStartTime) {
+          _dndStartTime = picked;
+          _saveSetting('dnd_start_time', '${picked.hour}:${picked.minute}');
+        } else {
+          _dndEndTime = picked;
+          _saveSetting('dnd_end_time', '${picked.hour}:${picked.minute}');
+        }
+      });
+    }
   }
 }

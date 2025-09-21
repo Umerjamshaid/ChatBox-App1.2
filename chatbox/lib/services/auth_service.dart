@@ -207,7 +207,7 @@ class AuthService {
           image: profileImageUrl ?? currentUser.image,
           extraData: {
             ...currentUser.extraData,
-            'bio': bio ?? currentUser.extraData?['bio'],
+            'bio': bio ?? currentUser.extraData['bio'],
           },
         );
         await _streamService.client.updateUser(updatedUser);
@@ -224,6 +224,18 @@ class AuthService {
   // Get Firebase user
   User? getCurrentUser() {
     return _auth.currentUser;
+  }
+
+  // Stream for auth state changes
+  Stream<User?> get userStream => _auth.authStateChanges();
+
+  // Check if user is connected to both Firebase and GetStream
+  Future<bool> isUserFullyConnected() async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return false;
+
+    // Check if GetStream is connected
+    return _streamService.isConnected;
   }
 
   // Check if user is connected to GetStream

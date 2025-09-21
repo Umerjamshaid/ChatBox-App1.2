@@ -17,6 +17,8 @@ import 'package:chatbox/screens/media/image_preview_screen.dart';
 import 'package:chatbox/screens/media/location_sharing_screen.dart';
 import 'package:chatbox/screens/media/media_gallery_screen.dart';
 import 'package:chatbox/screens/groups/group_info_screen.dart';
+import 'package:chatbox/screens/calls/voice_call_screen.dart';
+import 'package:chatbox/screens/calls/video_call_screen.dart';
 import 'package:chatbox/services/group_service.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -215,21 +217,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
         IconButton(
           icon: Icon(Icons.call, color: AppColors.onSurface),
-          onPressed: () {
-            // TODO: Implement voice call
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Voice call coming soon!')),
-            );
-          },
+          onPressed: () => _startVoiceCall(),
         ),
         IconButton(
           icon: Icon(Icons.videocam, color: AppColors.onSurface),
-          onPressed: () {
-            // TODO: Implement video call
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Video call coming soon!')),
-            );
-          },
+          onPressed: () => _startVideoCall(),
         ),
         PopupMenuButton<String>(
           icon: Icon(Icons.more_vert, color: AppColors.onSurface),
@@ -268,8 +260,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     StreamMessageWidget defaultWidget,
   ) {
     final message = details.message;
-    final isMyMessage =
-        message.user?.id == StreamChat.of(context).currentUser?.id;
+    final isMyMessage = _isMessageFromCurrentUser(message);
 
     return MessageBubble(
       message: message,
@@ -482,7 +473,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildEmojiPicker() {
-    return Container(
+    return SizedBox(
       height: 250,
       child: EmojiPicker(
         onEmojiSelected: (emoji) {
@@ -960,9 +951,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                           : null,
                       child: member.user?.image == null
                           ? Text(
-                              member.user?.name
-                                      ?.substring(0, 1)
-                                      .toUpperCase() ??
+                              member.user?.name.substring(0, 1).toUpperCase() ??
                                   '?',
                               style: TextStyle(
                                 color: AppColors.primary,
@@ -993,7 +982,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     if (!_isGroup) return;
 
     final groupService = GroupService();
-    final currentUserId = StreamChat.of(context).currentUser?.id;
+    final currentUserId = _getCurrentUserId();
 
     if (currentUserId == null) return;
 
@@ -1020,6 +1009,24 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     }
   }
 
+  bool _isMessageFromCurrentUser(Message message) {
+    try {
+      final currentUser = StreamChat.of(context).currentUser;
+      return message.user?.id == currentUser?.id;
+    } catch (e) {
+      // If StreamChat context is not available, assume it's not from current user
+      return false;
+    }
+  }
+
+  String? _getCurrentUserId() {
+    try {
+      return StreamChat.of(context).currentUser?.id;
+    } catch (e) {
+      return null;
+    }
+  }
+
   void _sendGroupEventMessage(String eventType, String userName) {
     if (!_isGroup) return;
 
@@ -1039,6 +1046,56 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
 
     widget.channel.sendMessage(message);
+  }
+
+  void _startVoiceCall() {
+    // Get participant IDs from the channel
+    final participantIds =
+        widget.channel.state?.members
+            .where((member) => member.user?.id != _getCurrentUserId())
+            .map((member) => member.user?.id ?? '')
+            .where((id) => id.isNotEmpty)
+            .toList() ??
+        [];
+
+    if (participantIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No participants available for call')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VoiceCallScreen(participantIds: participantIds),
+      ),
+    );
+  }
+
+  void _startVideoCall() {
+    // Get participant IDs from the channel
+    final participantIds =
+        widget.channel.state?.members
+            .where((member) => member.user?.id != _getCurrentUserId())
+            .map((member) => member.user?.id ?? '')
+            .where((id) => id.isNotEmpty)
+            .toList() ??
+        [];
+
+    if (participantIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No participants available for call')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => VideoCallScreen(participantIds: participantIds),
+      ),
+    );
   }
 }
 

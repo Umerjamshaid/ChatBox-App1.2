@@ -29,74 +29,108 @@ class _ChatListScreenState extends State<ChatListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: _isSearching
+          ? AppBar(
+              backgroundColor: AppColors.surface,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: AppColors.onSurface),
+                onPressed: () {
+                  setState(() => _isSearching = false);
+                  _searchController.clear();
+                },
+              ),
+              title: TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'Search chats...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: AppColors.grey600),
+                ),
+                style: TextStyle(color: AppColors.onSurface),
+                onChanged: (value) {
+                  // TODO: Implement search filtering
+                },
+              ),
+              actions: [
+                if (_searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: Icon(Icons.clear, color: AppColors.onSurface),
+                    onPressed: () {
+                      _searchController.clear();
+                      // TODO: Clear search results
+                    },
+                  ),
+              ],
+            )
+          : AppBar(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              title: const Text('Chats'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: _toggleSearch,
+                  tooltip: 'Search chats',
+                ),
+                PopupMenuButton<String>(
+                  onSelected: (value) {
+                    // TODO: Handle menu actions
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'new_group',
+                      child: Text('New Group'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Text('Settings'),
+                    ),
+                    const PopupMenuItem(value: 'help', child: Text('Help')),
+                  ],
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateOptions,
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: Column(
-        children: [
-          // Search Bar
-          if (_isSearching)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                decoration: AppStyles.textFieldDecoration.copyWith(
-                  hintText: 'Search chats...',
-                  prefixIcon: Icon(Icons.search, color: AppColors.grey600),
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.clear, color: AppColors.grey600),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() => _isSearching = false);
-                    },
-                  ),
-                ),
-                onChanged: (value) {
-                  // TODO: Implement search filtering
-                },
-              ),
-            ),
+      body: _buildChatList(),
+    );
+  }
 
-          // Chat List
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refreshChats,
-              child: StreamChannelListView(
-                controller: StreamChannelListController(
-                  client: StreamChat.of(context).client,
-                ),
-                itemBuilder: (context, channels, index, defaultWidget) {
-                  return _buildChannelPreview(channels[index]);
-                },
-                emptyBuilder: (context) {
-                  return _buildEmptyState();
-                },
-                errorBuilder: (context, error) {
-                  return _buildErrorState(error);
-                },
-                loadingBuilder: (context) {
-                  return _buildLoadingState();
-                },
+  Widget _buildChatList() {
+    return RefreshIndicator(
+      onRefresh: _refreshChats,
+      child: Builder(
+        builder: (context) {
+          try {
+            final streamChat = StreamChat.of(context);
+            return StreamChannelListView(
+              controller: StreamChannelListController(
+                client: streamChat.client,
               ),
-            ),
-          ),
-        ],
+              itemBuilder: (context, channels, index, defaultWidget) {
+                return _buildChannelPreview(channels[index]);
+              },
+              emptyBuilder: (context) {
+                return _buildEmptyState();
+              },
+              errorBuilder: (context, error) {
+                return _buildErrorState(error);
+              },
+              loadingBuilder: (context) {
+                return _buildLoadingState();
+              },
+            );
+          } catch (e) {
+            // If StreamChat context is not available, show loading state
+            return _buildLoadingState();
+          }
+        },
       ),
     );
   }
@@ -113,7 +147,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
         // Check if this is a group chat
         final isGroup = channel.type == 'team';
-        final memberCount = channel.state?.members?.length ?? 0;
+        final memberCount = channel.state?.members.length ?? 0;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -359,8 +393,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
       return message.text!;
     }
 
-    if (message.attachments?.isNotEmpty == true) {
-      final attachment = message.attachments!.first;
+    if (message.attachments.isNotEmpty == true) {
+      final attachment = message.attachments.first;
       switch (attachment.type) {
         case 'image':
           return '📷 Photo';
@@ -465,10 +499,19 @@ class _ChatListScreenState extends State<ChatListScreen> {
   void _showChannelOptions(Channel channel) {
     final isGroup = channel.type == 'team';
     final groupService = GroupService();
-    final currentUserId = StreamChat.of(context).client.state.currentUser?.id;
-    final isAdmin =
-        currentUserId != null &&
-        groupService.isUserAdmin(channel, currentUserId);
+    String? currentUserId;
+    bool isAdmin = false;
+
+    try {
+      currentUserId = StreamChat.of(context).client.state.currentUser?.id;
+      isAdmin =
+          currentUserId != null &&
+          groupService.isUserAdmin(channel, currentUserId);
+    } catch (e) {
+      // StreamChat context not available
+      currentUserId = null;
+      isAdmin = false;
+    }
 
     showModalBottomSheet(
       context: context,

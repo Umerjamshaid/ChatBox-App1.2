@@ -91,7 +91,7 @@ class ErrorHandler {
   String _handleStreamError(StreamChatError error) {
     // StreamChatError doesn't have errorCode in newer versions
     // Use the error message to determine the type
-    final message = error.message?.toLowerCase() ?? '';
+    final message = error.message.toLowerCase() ?? '';
 
     if (message.contains('authentication') ||
         message.contains('unauthorized')) {
@@ -137,7 +137,7 @@ class ErrorHandler {
   bool isRetryableError(dynamic error) {
     if (error is StreamChatError) {
       // Retry for network-related errors based on message content
-      final message = error.message?.toLowerCase() ?? '';
+      final message = error.message.toLowerCase() ?? '';
       return message.contains('network') ||
           message.contains('timeout') ||
           message.contains('connection');

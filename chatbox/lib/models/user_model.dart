@@ -47,7 +47,7 @@ class ChatUser {
   factory ChatUser.fromStreamUser(User user) {
     UserStatus status = UserStatus.offline;
     try {
-      final statusStr = user.extraData?['status'] as String?;
+      final statusStr = user.extraData['status'] as String?;
       if (statusStr != null) {
         status = UserStatus.values.firstWhere(
           (e) => e.toString() == statusStr,
@@ -62,14 +62,14 @@ class ChatUser {
       id: user.id,
       name: user.name,
       image: user.image,
-      email: user.extraData?['email'] as String?,
-      bio: user.extraData?['bio'] as String?,
+      email: user.extraData['email'] as String?,
+      bio: user.extraData['bio'] as String?,
       status: status,
-      lastSeen: user.extraData?['lastSeen'] != null
-          ? DateTime.parse(user.extraData!['lastSeen'] as String)
+      lastSeen: user.extraData['lastSeen'] != null
+          ? DateTime.parse(user.extraData['lastSeen'] as String)
           : null,
-      createdAt: user.extraData?['createdAt'] != null
-          ? DateTime.parse(user.extraData!['createdAt'] as String)
+      createdAt: user.extraData['createdAt'] != null
+          ? DateTime.parse(user.extraData['createdAt'] as String)
           : null,
       extraData: user.extraData as Map<String, dynamic>?,
     );

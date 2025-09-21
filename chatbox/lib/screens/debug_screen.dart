@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chatbox/services/stream_chat_service.dart';
 import 'package:chatbox/services/auth_service.dart';
-import 'package:chatbox/constants/app_constants.dart';
 
 class DebugScreen extends StatefulWidget {
   const DebugScreen({super.key});

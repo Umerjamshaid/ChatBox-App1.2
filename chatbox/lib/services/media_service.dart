@@ -166,10 +166,12 @@ class MediaService {
     if (mimeType.startsWith('video/')) return 'video';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType == 'application/pdf') return 'pdf';
-    if (mimeType.contains('document') || mimeType.contains('word'))
+    if (mimeType.contains('document') || mimeType.contains('word')) {
       return 'document';
-    if (mimeType.contains('spreadsheet') || mimeType.contains('excel'))
+    }
+    if (mimeType.contains('spreadsheet') || mimeType.contains('excel')) {
       return 'spreadsheet';
+    }
 
     return 'file';
   }
@@ -198,8 +200,9 @@ class MediaService {
   String getFileSizeString(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 

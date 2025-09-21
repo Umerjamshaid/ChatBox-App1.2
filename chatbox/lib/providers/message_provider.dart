@@ -66,8 +66,9 @@ class MessageProvider with ChangeNotifier {
 
   /// Load more messages (pagination)
   Future<void> loadMoreMessages() async {
-    if (_isLoadingMore || !_hasMoreMessages || _currentChannelId == null)
+    if (_isLoadingMore || !_hasMoreMessages || _currentChannelId == null) {
       return;
+    }
 
     _isLoadingMore = true;
     notifyListeners();

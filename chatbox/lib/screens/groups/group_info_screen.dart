@@ -32,7 +32,11 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
     try {
       // Get current user
-      _currentUserId = StreamChat.of(context).client.state.currentUser?.id;
+      try {
+        _currentUserId = StreamChat.of(context).client.state.currentUser?.id;
+      } catch (e) {
+        _currentUserId = null;
+      }
 
       // Load members
       await widget.channel.watch();
@@ -88,7 +92,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
 
   Future<void> _updateGroupDescription() async {
     final controller = TextEditingController(
-      text: (widget.channel.extraData?['description'] as String?) ?? '',
+      text: (widget.channel.extraData['description'] as String?) ?? '',
     );
     final newDescription = await showDialog<String>(
       context: context,
@@ -115,7 +119,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
     );
 
     if (newDescription != null &&
-        newDescription != (widget.channel.extraData?['description'] ?? '')) {
+        newDescription != (widget.channel.extraData['description'] ?? '')) {
       try {
         await _groupService.updateGroupInfo(
           widget.channel,
@@ -282,7 +286,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     : null,
                 child: member.user?.image == null
                     ? Text(
-                        member.user?.name?.substring(0, 1).toUpperCase() ?? '?',
+                        member.user?.name.substring(0, 1).toUpperCase() ?? '?',
                         style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w600,
@@ -443,10 +447,10 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                       ),
 
                       // Group Description
-                      if (widget.channel.extraData?['description'] != null) ...[
+                      if (widget.channel.extraData['description'] != null) ...[
                         const SizedBox(height: 8),
                         Text(
-                          widget.channel.extraData!['description'] as String,
+                          widget.channel.extraData['description'] as String,
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.grey600,
@@ -512,7 +516,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
                     title: const Text('Broadcast Mode'),
                     subtitle: const Text('Only admins can send messages'),
                     value:
-                        (widget.channel.extraData?['is_broadcast'] as bool?) ??
+                        (widget.channel.extraData['is_broadcast'] as bool?) ??
                         false,
                     onChanged: (value) async {
                       try {
@@ -588,7 +592,7 @@ class _GroupInfoScreenState extends State<GroupInfoScreen> {
             : null,
         child: member.user?.image == null
             ? Text(
-                member.user?.name?.substring(0, 1).toUpperCase() ?? '?',
+                member.user?.name.substring(0, 1).toUpperCase() ?? '?',
                 style: const TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,

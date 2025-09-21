@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:chatbox/services/stream_chat_service.dart';
-import 'package:chatbox/services/storage_service.dart';
 import 'package:chatbox/services/offline_storage_service.dart';
 import 'package:chatbox/services/presence_service.dart';
 import 'package:chatbox/models/presence_models.dart';

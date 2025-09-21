@@ -1,13 +1,15 @@
 // lib/screens/main_navigation.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:chatbox/services/auth_service.dart';
+import 'package:chatbox/services/stream_chat_service.dart';
 import 'package:chatbox/constants/colors.dart';
 import 'package:chatbox/screens/chat/chat_list_screen.dart';
 import 'package:chatbox/screens/groups/groups_screen.dart';
 import 'package:chatbox/screens/contacts/contacts_screen.dart';
 import 'package:chatbox/screens/profile/profile_screen.dart';
-import 'package:chatbox/widgets/search_delegate.dart';
+import 'package:chatbox/screens/calls/call_history_screen.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -19,9 +21,10 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  static final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const ChatListScreen(),
     const GroupsScreen(),
+    const CallHistoryScreen(),
     const ContactsScreen(),
     const ProfileScreen(),
   ];
@@ -29,6 +32,7 @@ class _MainNavigationState extends State<MainNavigation> {
   static const List<String> _titles = [
     'Chats',
     'Groups',
+    'Calls',
     'Contacts',
     'Profile',
   ];
@@ -39,59 +43,62 @@ class _MainNavigationState extends State<MainNavigation> {
     });
   }
 
-  void _toggleSearch() {
-    // Navigate to search screen or show search overlay
-    // For now, we'll show a simple search dialog
-    showSearch(context: context, delegate: ChatSearchDelegate());
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_selectedIndex]),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: _buildAppBarActions(),
+    return StreamChat(
+      client: Provider.of<StreamChatService>(context, listen: false).client,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_titles[_selectedIndex]),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: _buildAppBarActions(),
+        ),
+        body: _screens[_selectedIndex],
+        bottomNavigationBar: BottomNavigationBar(
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat_bubble_outline),
+              activeIcon: Icon(Icons.chat_bubble),
+              label: 'Chats',
+              tooltip: 'View your conversations',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.group_outlined),
+              activeIcon: Icon(Icons.group),
+              label: 'Groups',
+              tooltip: 'View your group chats',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.call_outlined),
+              activeIcon: Icon(Icons.call),
+              label: 'Calls',
+              tooltip: 'View call history',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.contacts_outlined),
+              activeIcon: Icon(Icons.contacts),
+              label: 'Contacts',
+              tooltip: 'View your contacts',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
+              tooltip: 'View your profile',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.grey600,
+          backgroundColor: AppColors.surface,
+          type: BottomNavigationBarType.fixed,
+          elevation: 8,
+          onTap: _onItemTapped,
+        ),
+        floatingActionButton: _buildFloatingActionButton(),
       ),
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chats',
-            tooltip: 'View your conversations',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group_outlined),
-            activeIcon: Icon(Icons.group),
-            label: 'Groups',
-            tooltip: 'View your group chats',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.contacts_outlined),
-            activeIcon: Icon(Icons.contacts),
-            label: 'Contacts',
-            tooltip: 'View your contacts',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-            tooltip: 'View your profile',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.grey600,
-        backgroundColor: AppColors.surface,
-        type: BottomNavigationBarType.fixed,
-        elevation: 8,
-        onTap: _onItemTapped,
-      ),
-      floatingActionButton: _buildFloatingActionButton(),
     );
   }
 
@@ -99,11 +106,6 @@ class _MainNavigationState extends State<MainNavigation> {
     switch (_selectedIndex) {
       case 0: // Chats
         return [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: 'Search chats',
-          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               // TODO: Handle menu actions
@@ -116,22 +118,12 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
         ];
       case 1: // Groups
-        return [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: 'Search groups',
-          ),
-        ];
-      case 2: // Contacts
-        return [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: 'Search contacts',
-          ),
-        ];
-      case 3: // Profile
+        return [];
+      case 2: // Calls
+        return [];
+      case 3: // Contacts
+        return [];
+      case 4: // Profile
         return [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -155,8 +147,8 @@ class _MainNavigationState extends State<MainNavigation> {
           },
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          child: const Icon(Icons.add_comment),
           tooltip: 'Start new chat',
+          child: const Icon(Icons.add_comment),
         );
       case 1: // Groups
         return FloatingActionButton(
@@ -165,18 +157,20 @@ class _MainNavigationState extends State<MainNavigation> {
           },
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          child: const Icon(Icons.group_add),
           tooltip: 'Create new group',
+          child: const Icon(Icons.group_add),
         );
-      case 2: // Contacts
+      case 2: // Calls - No FAB needed
+        return null;
+      case 3: // Contacts
         return FloatingActionButton(
           onPressed: () {
             // TODO: Navigate to add contact screen
           },
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
-          child: const Icon(Icons.person_add),
           tooltip: 'Add new contact',
+          child: const Icon(Icons.person_add),
         );
       default:
         return null;

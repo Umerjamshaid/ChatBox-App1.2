@@ -255,7 +255,7 @@ class _EmojiPickerState extends State<EmojiPicker>
       child: Column(
         children: [
           // Tab bar
-          Container(
+          SizedBox(
             height: 50,
             child: TabBar(
               controller: _tabController,

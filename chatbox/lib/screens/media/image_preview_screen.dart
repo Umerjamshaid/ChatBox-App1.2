@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:chatbox/constants/colors.dart';
-import 'package:chatbox/constants/styles.dart';
 import 'package:chatbox/services/media_service.dart';
 
 class ImagePreviewScreen extends StatefulWidget {

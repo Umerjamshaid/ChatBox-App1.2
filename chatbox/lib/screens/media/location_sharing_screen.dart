@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:chatbox/constants/colors.dart';
-import 'package:chatbox/constants/styles.dart';
 import 'package:chatbox/services/media_service.dart';
-import 'package:chatbox/models/user_model.dart';
 
 class LocationSharingScreen extends StatefulWidget {
   final Function(LocationData)? onLocationSelected;

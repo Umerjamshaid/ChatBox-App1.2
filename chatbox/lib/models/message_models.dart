@@ -68,16 +68,14 @@ class ChatMessage {
               .toList() ??
           [],
       replyCount: message.replyCount ?? 0,
-      isEdited:
-          message.updatedAt != null &&
-          message.updatedAt!.isAfter(message.createdAt),
+      isEdited: message.updatedAt.isAfter(message.createdAt),
       editedAt: message.updatedAt,
     );
   }
 
   static MessageType _determineMessageType(Message message) {
-    if (message.attachments?.isNotEmpty == true) {
-      final attachment = message.attachments!.first;
+    if (message.attachments.isNotEmpty == true) {
+      final attachment = message.attachments.first;
       switch (attachment.type) {
         case 'image':
           return MessageType.image;
@@ -191,12 +189,11 @@ class LocationAttachment extends ChatAttachment {
 
   factory LocationAttachment.fromAttachment(Attachment attachment) {
     return LocationAttachment(
-      latitude: (attachment.extraData?['latitude'] as num?)?.toDouble() ?? 0.0,
-      longitude:
-          (attachment.extraData?['longitude'] as num?)?.toDouble() ?? 0.0,
-      address: attachment.extraData?['address'] as String?,
+      latitude: (attachment.extraData['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (attachment.extraData['longitude'] as num?)?.toDouble() ?? 0.0,
+      address: attachment.extraData['address'] as String?,
       placeName:
-          attachment.extraData?['placeName'] as String? ?? attachment.title,
+          attachment.extraData['placeName'] as String? ?? attachment.title,
       title: attachment.title,
       description: attachment.text,
       extraData: attachment.extraData,
@@ -237,11 +234,11 @@ class ContactAttachment extends ChatAttachment {
   factory ContactAttachment.fromAttachment(Attachment attachment) {
     return ContactAttachment(
       contactName:
-          attachment.extraData?['contactName'] as String? ??
+          attachment.extraData['contactName'] as String? ??
           attachment.title ??
           'Contact',
-      phoneNumber: attachment.extraData?['phoneNumber'] as String?,
-      email: attachment.extraData?['email'] as String?,
+      phoneNumber: attachment.extraData['phoneNumber'] as String?,
+      email: attachment.extraData['email'] as String?,
       title: attachment.title,
       description: attachment.text,
       extraData: attachment.extraData,
@@ -282,9 +279,9 @@ class VoiceNoteAttachment extends ChatAttachment {
     return VoiceNoteAttachment(
       audioUrl: attachment.assetUrl ?? attachment.imageUrl ?? '',
       duration: Duration(
-        seconds: (attachment.extraData?['duration'] as num?)?.toInt() ?? 0,
+        seconds: (attachment.extraData['duration'] as num?)?.toInt() ?? 0,
       ),
-      waveformData: attachment.extraData?['waveformData'] as String?,
+      waveformData: attachment.extraData['waveformData'] as String?,
       title: attachment.title,
       description: attachment.text,
       extraData: attachment.extraData,
@@ -326,23 +323,22 @@ class PollAttachment extends ChatAttachment {
   }) : super(type: AttachmentTypes.poll);
 
   factory PollAttachment.fromAttachment(Attachment attachment) {
-    final optionsData =
-        attachment.extraData?['options'] as List<dynamic>? ?? [];
+    final optionsData = attachment.extraData['options'] as List<dynamic>? ?? [];
     final options = optionsData
         .map((option) => PollOption.fromJson(option))
         .toList();
 
     return PollAttachment(
       question:
-          attachment.extraData?['question'] as String? ??
+          attachment.extraData['question'] as String? ??
           attachment.title ??
           'Poll',
       options: options,
       isMultipleChoice:
-          attachment.extraData?['isMultipleChoice'] as bool? ?? false,
-      isAnonymous: attachment.extraData?['isAnonymous'] as bool? ?? false,
-      expiresAt: attachment.extraData?['expiresAt'] != null
-          ? DateTime.parse(attachment.extraData!['expiresAt'] as String)
+          attachment.extraData['isMultipleChoice'] as bool? ?? false,
+      isAnonymous: attachment.extraData['isAnonymous'] as bool? ?? false,
+      expiresAt: attachment.extraData['expiresAt'] != null
+          ? DateTime.parse(attachment.extraData['expiresAt'] as String)
           : null,
       title: attachment.title,
       description: attachment.text,

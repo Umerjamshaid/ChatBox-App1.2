@@ -202,7 +202,7 @@ class ThemeSettingsScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? AppColors.primary
-                : Theme.of(context).colorScheme.surfaceVariant,
+                : Theme.of(context).colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

@@ -275,7 +275,7 @@ class ChatChannel {
   // Get online member count
   int getOnlineMemberCount() {
     return originalChannel.state?.members
-            ?.where((member) => member.user?.online == true)
+            .where((member) => member.user?.online == true)
             .length ??
         0;
   }

@@ -1,6 +1,5 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:stream_chat_flutter/stream_chat_flutter.dart';
@@ -11,13 +10,10 @@ import 'services/stream_chat_service.dart';
 import 'services/auth_service.dart';
 import 'services/error_handler.dart';
 import 'services/storage_service.dart';
-import 'screens/splash_screen.dart';
 import 'screens/main_navigation.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_screen.dart';
-import 'screens/home_screen.dart';
 import 'screens/debug_screen.dart';
-import 'providers/theme_provider.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/settings/privacy_settings_screen.dart';
 import 'screens/settings/notification_settings_screen.dart';
@@ -25,6 +21,9 @@ import 'screens/settings/theme_settings_screen.dart';
 import 'screens/settings/language_settings_screen.dart';
 import 'screens/settings/account_settings_screen.dart';
 import 'screens/settings/blocked_users_screen.dart';
+import 'widgets/auth_wrapper.dart';
+import 'widgets/connection_wrapper.dart';
+import 'screens/test_connection_screen.dart';
 
 // Static flag to track Firebase initialization state
 bool _firebaseInitialized = false;
@@ -115,10 +114,10 @@ class MyApp extends StatelessWidget {
         ),
         initialRoute: '/',
         routes: {
-          '/': (context) => const SplashScreen(),
+          '/': (context) => const AuthWrapper(),
           '/login': (context) => const LoginScreen(),
           '/signup': (context) => const SignupScreen(),
-          '/home': (context) => const HomeScreen(),
+          '/home': (context) => const MainNavigation(),
           '/debug': (context) => const DebugScreen(),
           '/profile': (context) => const ProfileScreen(),
           '/privacy_settings': (context) => const PrivacySettingsScreen(),
@@ -128,6 +127,7 @@ class MyApp extends StatelessWidget {
           '/language_settings': (context) => const LanguageSettingsScreen(),
           '/account_settings': (context) => const AccountSettingsScreen(),
           '/blocked_users': (context) => const BlockedUsersScreen(),
+          '/test_connection': (context) => const TestConnectionScreen(),
         },
         onUnknownRoute: (settings) {
           debugPrint('Unknown route: ${settings.name}');
@@ -139,11 +139,14 @@ class MyApp extends StatelessWidget {
               context,
               listen: false,
             );
-            return StreamChat(client: streamService.client, child: child);
+            return StreamChat(
+              client: streamService.client,
+              child: ConnectionWrapper(child: child ?? const SizedBox.shrink()),
+            );
           } catch (e) {
             debugPrint('StreamChat initialization error: $e');
             // Return child without StreamChat wrapper if initialization fails
-            return child ?? const SizedBox.shrink();
+            return ConnectionWrapper(child: child ?? const SizedBox.shrink());
           }
         },
       ),

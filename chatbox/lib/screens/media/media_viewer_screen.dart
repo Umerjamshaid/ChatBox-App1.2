@@ -1,9 +1,7 @@
 // lib/screens/media/media_viewer_screen.dart
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:chatbox/constants/colors.dart';
 import 'package:chatbox/services/media_service.dart';
 
 class MediaViewerScreen extends StatefulWidget {

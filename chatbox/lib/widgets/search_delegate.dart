@@ -330,8 +330,8 @@ class ChatSearchDelegate extends SearchDelegate<String> {
       return message.text!;
     }
 
-    if (message.attachments?.isNotEmpty == true) {
-      final attachment = message.attachments!.first;
+    if (message.attachments.isNotEmpty == true) {
+      final attachment = message.attachments.first;
       switch (attachment.type) {
         case 'image':
           return '📷 Photo';

@@ -45,7 +45,7 @@ class MessageBubble extends StatelessWidget {
                   : CrossAxisAlignment.start,
               children: [
                 if (!isMyMessage && showTimestamp) _buildSenderInfo(),
-                _buildMessageContent(),
+                Builder(builder: _buildMessageContentWithContext),
                 if (showStatus) _buildMessageStatus(),
               ],
             ),
@@ -65,7 +65,7 @@ class MessageBubble extends StatelessWidget {
           : null,
       child: message.user?.image == null
           ? Text(
-              message.user?.name?.substring(0, 1).toUpperCase() ?? '?',
+              message.user?.name.substring(0, 1).toUpperCase() ?? '?',
               style: TextStyle(
                 color: AppColors.grey600,
                 fontWeight: FontWeight.bold,
@@ -85,59 +85,6 @@ class MessageBubble extends StatelessWidget {
           fontSize: 12,
           color: AppColors.grey600,
           fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMessageContent() {
-    return GestureDetector(
-      onLongPress: _showMessageOptions,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: 280, minWidth: 80),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isMyMessage ? AppColors.primary : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(isMyMessage ? 18 : 4),
-            bottomRight: Radius.circular(isMyMessage ? 4 : 18),
-          ),
-          border: Border.all(
-            color: AppColors.grey300.withOpacity(0.5),
-            width: 0.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Reply preview
-            if (message.parentId != null) _buildReplyPreview(),
-
-            // Message text
-            if (message.text?.isNotEmpty == true)
-              Text(
-                message.text!,
-                style: TextStyle(
-                  color: isMyMessage ? Colors.white : AppColors.onSurface,
-                  fontSize: 16,
-                ),
-              ),
-
-            // Attachments
-            if (message.attachments?.isNotEmpty == true) _buildAttachments(),
-
-            // Reactions
-            if (message.reactionGroups?.isNotEmpty == true) _buildReactions(),
-          ],
         ),
       ),
     );
@@ -179,7 +126,7 @@ class MessageBubble extends StatelessWidget {
 
   Widget _buildAttachments() {
     return Column(
-      children: message.attachments!.map((attachment) {
+      children: message.attachments.map((attachment) {
         switch (attachment.type) {
           case 'image':
             return Container(
@@ -360,9 +307,62 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  void _showMessageOptions() {
+  Widget _buildMessageContentWithContext(BuildContext context) {
+    return GestureDetector(
+      onLongPress: () => _showMessageOptions(context),
+      child: Container(
+        constraints: BoxConstraints(maxWidth: 280, minWidth: 80),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isMyMessage ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isMyMessage ? 18 : 4),
+            bottomRight: Radius.circular(isMyMessage ? 4 : 18),
+          ),
+          border: Border.all(
+            color: AppColors.grey300.withOpacity(0.5),
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Reply preview
+            if (message.parentId != null) _buildReplyPreview(),
+
+            // Message text
+            if (message.text?.isNotEmpty == true)
+              Text(
+                message.text!,
+                style: TextStyle(
+                  color: isMyMessage ? Colors.white : AppColors.onSurface,
+                  fontSize: 16,
+                ),
+              ),
+
+            // Attachments
+            if (message.attachments.isNotEmpty == true) _buildAttachments(),
+
+            // Reactions
+            if (message.reactionGroups?.isNotEmpty == true) _buildReactions(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMessageOptions(BuildContext context) {
     showModalBottomSheet(
-      context: _getContext(),
+      context: context,
       builder: (context) => Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Column(
@@ -442,11 +442,5 @@ class MessageBubble extends StatelessWidget {
   void _openLocation(Attachment attachment) {
     // TODO: Open location in maps
     print('Opening location: ${attachment.title}');
-  }
-
-  BuildContext _getContext() {
-    // This is a workaround since we don't have direct access to context
-    // In a real implementation, you'd pass the context as a parameter
-    return null as BuildContext; // This will need to be fixed
   }
 }

@@ -2,11 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:chatbox/constants/colors.dart';
-import 'package:chatbox/constants/styles.dart';
 import 'package:chatbox/models/user_model.dart';
 import 'package:chatbox/services/auth_service.dart';
-import 'package:chatbox/services/storage_service.dart';
-import 'package:chatbox/widgets/progress_indicator.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends StatefulWidget {

@@ -24,7 +24,7 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
 
   String? _selectedImageUrl;
   List<ChatUser> _availableUsers = [];
-  List<String> _selectedUserIds = [];
+  final List<String> _selectedUserIds = [];
   bool _isLoading = false;
   bool _isLoadingUsers = true;
   bool _isPrivate = true;

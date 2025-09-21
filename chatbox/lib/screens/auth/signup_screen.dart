@@ -327,7 +327,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _signup,
                     style: AppStyles.primaryButton.copyWith(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                         const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),

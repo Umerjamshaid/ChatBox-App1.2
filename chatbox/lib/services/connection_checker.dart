@@ -138,7 +138,7 @@ class ConnectionChecker {
     final status = await getConnectionStatus();
     final testResult = await testConnection();
 
-    print('\n' + '=' * 50);
+    print('\n${'=' * 50}');
     print('🔍 GETSTREAM CONNECTION STATUS');
     print('=' * 50);
 

@@ -35,8 +35,8 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen> {
       setState(() {
         _mediaMessages =
             messages.messages
-                ?.where((message) => (message.attachments?.isNotEmpty ?? false))
-                ?.toList() ??
+                ?.where((message) => (message.attachments.isNotEmpty ?? false))
+                .toList() ??
             [];
         _isLoading = false;
       });
@@ -124,7 +124,7 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen> {
       itemCount: filteredMessages.length,
       itemBuilder: (context, index) {
         final message = filteredMessages[index];
-        final attachment = message.attachments!.first;
+        final attachment = message.attachments.first;
 
         return GestureDetector(
           onTap: () => _openMediaViewer(message, attachment),
@@ -136,7 +136,7 @@ class _MediaGalleryScreenState extends State<MediaGalleryScreen> {
 
   List<Message> _getFilteredMessages() {
     return _mediaMessages.where((message) {
-      final attachment = message.attachments!.first;
+      final attachment = message.attachments.first;
       switch (_selectedTab) {
         case 'images':
           return attachment.type == 'image';

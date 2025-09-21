@@ -1,7 +1,6 @@
 // lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:chatbox/services/auth_service.dart';
 import 'package:chatbox/constants/app_constants.dart';
 
