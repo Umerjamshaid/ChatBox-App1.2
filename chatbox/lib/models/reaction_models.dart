@@ -277,12 +277,17 @@ class MessageWithReactions {
     var totalReactionCount = 0;
     var hasCurrentUserReacted = false;
 
-    if (message.reactionCounts != null) {
-      message.reactionCounts!.forEach((type, count) {
+    if (message.reactionGroups != null) {
+      message.reactionGroups!.forEach((type, reactionGroup) {
+        final reactionList = reactionGroup as List<Reaction>;
+        final count = reactionList.length;
+        final userIds = reactionList.map((r) => r.userId ?? '').toList();
+        final userNames = reactionList.map((r) => r.user?.name ?? '').toList();
+
         final reactionData = {
           'count': count,
-          'userIds': message.reactionScores?[type] ?? [],
-          'userNames': [], // Would need to be populated from user data
+          'userIds': userIds,
+          'userNames': userNames,
         };
 
         final summary = MessageReactionSummary.fromReactionCounts(

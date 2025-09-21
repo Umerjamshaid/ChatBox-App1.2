@@ -136,174 +136,203 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Widget _buildChannelPreview(Channel channel) {
-    return StreamBuilder<Message?>(
-      stream: channel.state?.lastMessageStream,
-      builder: (context, snapshot) {
-        final lastMessage = snapshot.data;
-        final unreadCount = channel.state?.unreadCount ?? 0;
-
-        // Handle offline state
-        final isOnline = channel.state?.isUpToDate ?? true;
-
-        // Check if this is a group chat
-        final isGroup = channel.type == 'team';
-        final memberCount = channel.state?.members.length ?? 0;
-
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: unreadCount > 0
-                ? AppColors.primary.withOpacity(0.05)
-                : AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: unreadCount > 0
-                  ? AppColors.primary.withOpacity(0.2)
-                  : AppColors.grey300,
-              width: 1,
-            ),
-          ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: Stack(
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: AppColors.grey200,
-                  backgroundImage: channel.image != null
-                      ? NetworkImage(channel.image!)
-                      : null,
-                  child: channel.image == null
-                      ? Icon(
-                          isGroup ? Icons.group : Icons.person,
-                          color: AppColors.grey600,
-                          size: 24,
-                        )
-                      : null,
-                ),
-                if (unreadCount > 0)
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: AppColors.danger,
-                        shape: BoxShape.circle,
-                      ),
-                      constraints: const BoxConstraints(
-                        minWidth: 18,
-                        minHeight: 18,
-                      ),
-                      child: Text(
-                        unreadCount > 99 ? '99+' : unreadCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                if (isGroup)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 16,
-                      height: 16,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: Icon(Icons.group, size: 8, color: Colors.white),
-                    ),
-                  ),
-              ],
-            ),
-            title: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    channel.name ?? 'Unknown Chat',
-                    style: TextStyle(
-                      fontWeight: unreadCount > 0
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      color: AppColors.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (!isOnline)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Icon(
-                      Icons.cloud_off,
-                      size: 16,
-                      color: AppColors.grey500,
-                    ),
-                  ),
-              ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isGroup)
-                  Text(
-                    '$memberCount members',
-                    style: TextStyle(color: AppColors.grey600, fontSize: 12),
-                  ),
-                if (lastMessage != null)
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _formatMessagePreview(lastMessage),
-                          style: TextStyle(
-                            color: AppColors.grey600,
-                            fontSize: 14,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatTime(lastMessage.createdAt),
-                        style: TextStyle(
-                          color: AppColors.grey500,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Text(
-                    'No messages yet',
-                    style: TextStyle(
-                      color: AppColors.grey500,
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(channel: channel),
-                ),
-              );
-            },
-            onLongPress: () => _showChannelOptions(channel),
-          ),
-        );
+    return Dismissible(
+      key: Key(channel.id ?? 'unknown'),
+      direction: DismissDirection.horizontal,
+      background: _buildSwipeBackground(true),
+      secondaryBackground: _buildSwipeBackground(false),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe right - Pin/Unpin
+          await _togglePinChannel(channel);
+          return false; // Don't dismiss
+        } else {
+          // Swipe left - Archive
+          return await _confirmArchiveChannel(channel);
+        }
       },
+      child: StreamBuilder<Message?>(
+        stream: channel.state?.lastMessageStream,
+        builder: (context, snapshot) {
+          final lastMessage = snapshot.data;
+          final unreadCount = channel.state?.unreadCount ?? 0;
+
+          // Handle offline state
+          final isOnline = channel.state?.isUpToDate ?? true;
+
+          // Check if this is a group chat
+          final isGroup = channel.type == 'team';
+          final memberCount = channel.state?.members.length ?? 0;
+
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            decoration: BoxDecoration(
+              color: unreadCount > 0
+                  ? AppColors.primary.withOpacity(0.05)
+                  : AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: unreadCount > 0
+                    ? AppColors.primary.withOpacity(0.2)
+                    : AppColors.grey300,
+                width: 1,
+              ),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(12),
+              leading: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.grey200,
+                    backgroundImage: channel.image != null
+                        ? NetworkImage(channel.image!)
+                        : null,
+                    child: channel.image == null
+                        ? Icon(
+                            isGroup ? Icons.group : Icons.person,
+                            color: AppColors.grey600,
+                            size: 24,
+                          )
+                        : null,
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: AppColors.danger,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        child: Text(
+                          unreadCount > 99 ? '99+' : unreadCount.toString(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  if (isGroup)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: Icon(Icons.group, size: 8, color: Colors.white),
+                      ),
+                    ),
+                ],
+              ),
+              title: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      channel.name ?? 'Unknown Chat',
+                      style: TextStyle(
+                        fontWeight: unreadCount > 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: AppColors.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (!isOnline)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8),
+                      child: Icon(
+                        Icons.cloud_off,
+                        size: 16,
+                        color: AppColors.grey500,
+                      ),
+                    ),
+                ],
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isGroup)
+                    Text(
+                      '$memberCount members',
+                      style: TextStyle(color: AppColors.grey600, fontSize: 12),
+                    ),
+                  if (lastMessage != null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _formatMessagePreview(lastMessage),
+                            style: TextStyle(
+                              color: AppColors.grey600,
+                              fontSize: 14,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Row(
+                          children: [
+                            if (!isOnline)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Icon(
+                                  Icons.access_time,
+                                  size: 12,
+                                  color: AppColors.grey500,
+                                ),
+                              ),
+                            Text(
+                              _formatTime(lastMessage.createdAt),
+                              style: TextStyle(
+                                color: AppColors.grey500,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'No messages yet',
+                      style: TextStyle(
+                        color: AppColors.grey500,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                ],
+              ),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChatScreen(channel: channel),
+                  ),
+                );
+              },
+              onLongPress: () => _showChannelOptions(channel),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -649,5 +678,48 @@ class _ChatListScreenState extends State<ChatListScreen> {
         ).showSnackBar(SnackBar(content: Text('Failed to delete group: $e')));
       }
     }
+  }
+
+  Widget _buildSwipeBackground(bool isLeft) {
+    return Container(
+      alignment: isLeft ? Alignment.centerLeft : Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      color: isLeft ? AppColors.primary : AppColors.danger,
+      child: Icon(isLeft ? Icons.push_pin : Icons.archive, color: Colors.white),
+    );
+  }
+
+  Future<void> _togglePinChannel(Channel channel) async {
+    try {
+      // TODO: Implement pin/unpin functionality
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Pin functionality coming soon!')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to pin channel: $e')));
+    }
+  }
+
+  Future<bool?> _confirmArchiveChannel(Channel channel) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Archive Chat'),
+        content: const Text('Are you sure you want to archive this chat?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Archive'),
+          ),
+        ],
+      ),
+    );
   }
 }

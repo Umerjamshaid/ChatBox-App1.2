@@ -4,6 +4,7 @@ import 'package:stream_chat_flutter/stream_chat_flutter.dart';
 import 'package:chatbox/services/stream_chat_service.dart';
 import 'package:chatbox/services/offline_storage_service.dart';
 import 'package:chatbox/services/presence_service.dart';
+import 'package:chatbox/services/connection_checker.dart';
 import 'package:chatbox/models/presence_models.dart';
 
 /// Comprehensive chat service wrapping GetStream operations
@@ -11,6 +12,7 @@ class ChatService {
   final StreamChatService _streamService;
   final OfflineStorageService _storageService;
   final PresenceService _presenceService;
+  final ConnectionChecker _connectionChecker;
 
   // Stream controllers for real-time updates
   final StreamController<List<Map<String, dynamic>>> _channelsController =
@@ -28,11 +30,8 @@ class ChatService {
   List<Map<String, dynamic>> _users = [];
   String? _currentChannelId;
 
-  ChatService(
-    this._streamService,
-    this._storageService,
-    this._presenceService,
-  ) {
+  ChatService(this._streamService, this._storageService, this._presenceService)
+    : _connectionChecker = ConnectionChecker(_streamService) {
     _initializeEventListeners();
   }
 
@@ -49,6 +48,7 @@ class ChatService {
   List<Map<String, dynamic>> get messages => _messages;
   List<Map<String, dynamic>> get users => _users;
   String? get currentChannelId => _currentChannelId;
+  String? get currentUserId => _streamService.client.state.currentUser?.id;
 
   /// Initialize event listeners for real-time updates
   void _initializeEventListeners() {
@@ -64,7 +64,31 @@ class ChatService {
   /// Load initial data and set up offline support
   Future<void> initialize() async {
     await _storageService.initialize();
-    await _loadCachedData();
+    await _preloadData();
+  }
+
+  /// Preload essential data for fast loading
+  Future<void> _preloadData() async {
+    try {
+      // Load cached data in parallel for faster startup
+      final cachedDataFuture = _loadCachedData();
+
+      // Pre-warm connectivity check
+      final connectivityFuture = _checkConnectivity();
+
+      await Future.wait([cachedDataFuture, connectivityFuture]);
+
+      // Process any queued messages if online
+      final isOnline = await connectivityFuture;
+      if (isOnline) {
+        // Process queued messages in background
+        processQueuedMessages();
+      }
+    } catch (e) {
+      print('Failed to preload data: $e');
+      // Fallback to basic loading
+      await _loadCachedData();
+    }
   }
 
   /// Load cached data for offline support
@@ -81,42 +105,56 @@ class ChatService {
     }
   }
 
-  /// Load user channels
-  Future<void> loadChannels({bool forceRefresh = false}) async {
-    if (!forceRefresh && _channels.isNotEmpty) {
+  /// Load user channels with lazy loading optimization
+  Future<void> loadChannels({
+    bool forceRefresh = false,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    if (!forceRefresh && _channels.isNotEmpty && offset == 0) {
       _channelsController.add(_channels);
       return;
     }
 
     try {
-      // Load channels from GetStream
-      // This will be implemented with correct API calls
-      final mockChannels = [
-        {
-          'id': 'channel_1',
-          'type': 'messaging',
-          'name': 'General',
-          'memberCount': 5,
-          'lastMessage': 'Hello everyone!',
-          'lastMessageAt': DateTime.now().toIso8601String(),
-        },
-        {
-          'id': 'channel_2',
-          'type': 'messaging',
-          'name': 'Random',
-          'memberCount': 3,
-          'lastMessage': 'How is everyone doing?',
-          'lastMessageAt': DateTime.now()
-              .subtract(const Duration(hours: 1))
-              .toIso8601String(),
-        },
-      ];
+      // Load channels from GetStream with pagination
+      final filter = Filter.in_('members', [
+        _streamService.client.state.currentUser!.id,
+      ]);
+      final sort = [SortOption('last_message_at', direction: SortOption.DESC)];
+      final options = PaginationParams(limit: limit, offset: offset);
 
-      _channels = mockChannels;
+      final channelStream = _streamService.client.queryChannels(
+        filter: filter,
+        paginationParams: options,
+      );
+
+      final channels = await channelStream.first;
+
+      final channelData = channels
+          .map(
+            (channel) => {
+              'id': channel.id,
+              'type': channel.type,
+              'name': channel.name ?? 'Unnamed',
+              'memberCount': channel.memberCount ?? 0,
+              'lastMessage': channel.lastMessage?.text ?? '',
+              'lastMessageAt': channel.lastMessageAt?.toIso8601String(),
+              'image': channel.image,
+            },
+          )
+          .toList();
+
+      if (offset == 0) {
+        _channels = channelData;
+      } else {
+        _channels.addAll(channelData);
+      }
+
       _channelsController.add(_channels);
 
-      // Cache channels
-      await _storageService.cacheChannels(_channels);
+      // Cache channels in background
+      _storageService.cacheChannels(_channels);
     } catch (e) {
       print('Failed to load channels: $e');
       throw Exception('Failed to load channels: $e');
@@ -162,15 +200,17 @@ class ChatService {
     }
   }
 
-  /// Load messages for a channel
+  /// Load messages for a channel with lazy loading optimization
   Future<void> loadMessages(
     String channelId, {
     int limit = 50,
     bool forceRefresh = false,
+    int offset = 0,
   }) async {
     if (_currentChannelId == channelId &&
         !forceRefresh &&
-        _messages.isNotEmpty) {
+        _messages.isNotEmpty &&
+        offset == 0) {
       _messagesController.add(_messages);
       return;
     }
@@ -178,7 +218,7 @@ class ChatService {
     _currentChannelId = channelId;
 
     try {
-      // Load messages from GetStream
+      // Load messages from GetStream with pagination
       final mockMessages = [
         {
           'id': 'msg_1',
@@ -204,22 +244,31 @@ class ChatService {
         },
       ];
 
-      _messages = mockMessages;
+      if (offset == 0) {
+        _messages = mockMessages;
+      } else {
+        _messages.addAll(mockMessages);
+      }
+
       _messagesController.add(_messages);
 
-      // Cache messages
-      await _storageService.cacheMessages(channelId, _messages);
+      // Cache messages in background if this is initial load
+      if (offset == 0) {
+        _storageService.cacheMessages(channelId, _messages);
+      }
     } catch (e) {
       print('Failed to load messages for channel $channelId: $e');
 
-      // Try to load from cache
-      try {
-        _messages = await _storageService.getCachedMessages(channelId);
-        if (_messages.isNotEmpty) {
-          _messagesController.add(_messages);
+      // Try to load from cache only for initial load
+      if (offset == 0) {
+        try {
+          _messages = await _storageService.getCachedMessages(channelId);
+          if (_messages.isNotEmpty) {
+            _messagesController.add(_messages);
+          }
+        } catch (cacheError) {
+          print('Failed to load cached messages: $cacheError');
         }
-      } catch (cacheError) {
-        print('Failed to load cached messages: $cacheError');
       }
 
       throw Exception('Failed to load messages: $e');
@@ -232,7 +281,9 @@ class ChatService {
     String text,
   ) async {
     try {
-      // Send message via GetStream
+      // Check if we're online
+      final isOnline = await _checkConnectivity();
+
       final message = {
         'id': 'msg_${DateTime.now().millisecondsSinceEpoch}',
         'text': text,
@@ -242,7 +293,7 @@ class ChatService {
             _streamService.client.state.currentUser?.image ??
             'https://via.placeholder.com/50',
         'createdAt': DateTime.now().toIso8601String(),
-        'status': 'sending',
+        'status': isOnline ? 'sending' : 'queued',
         'channelId': channelId,
       };
 
@@ -250,17 +301,71 @@ class ChatService {
       _messages.insert(0, message);
       _messagesController.add(_messages);
 
-      // Simulate sending delay
-      await Future.delayed(const Duration(seconds: 1));
+      if (isOnline) {
+        // Send message via GetStream
+        // Simulate sending delay
+        await Future.delayed(const Duration(seconds: 1));
 
-      // Update status to sent
-      message['status'] = 'sent';
-      _messagesController.add(_messages);
+        // Update status to sent
+        message['status'] = 'sent';
+        _messagesController.add(_messages);
+      } else {
+        // Queue message for offline sending
+        await _storageService.queueMessage(message);
+
+        // Update status to queued
+        message['status'] = 'queued';
+        _messagesController.add(_messages);
+      }
 
       return message;
     } catch (e) {
       print('Failed to send message: $e');
       throw Exception('Failed to send message: $e');
+    }
+  }
+
+  /// Check connectivity status
+  Future<bool> _checkConnectivity() async {
+    try {
+      final status = await _connectionChecker.getConnectionStatus();
+      return status['network_connected'] == true &&
+          status['user_connected'] == true;
+    } catch (e) {
+      print('Failed to check connectivity: $e');
+      return false;
+    }
+  }
+
+  /// Process queued messages when coming back online
+  Future<void> processQueuedMessages() async {
+    try {
+      final queuedMessages = await _storageService.getQueuedMessages();
+
+      for (final message in queuedMessages) {
+        try {
+          // Attempt to send the queued message
+          // In a real implementation, this would call the actual API
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Update message status in local messages
+          final localMessageIndex = _messages.indexWhere(
+            (m) => m['id'] == message['id'],
+          );
+          if (localMessageIndex != -1) {
+            _messages[localMessageIndex]['status'] = 'sent';
+            _messagesController.add(_messages);
+          }
+
+          // Remove from queue
+          await _storageService.removeQueuedMessage(message['id']);
+        } catch (e) {
+          print('Failed to send queued message ${message['id']}: $e');
+          // Keep in queue for retry
+        }
+      }
+    } catch (e) {
+      print('Failed to process queued messages: $e');
     }
   }
 

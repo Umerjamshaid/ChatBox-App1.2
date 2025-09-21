@@ -1,10 +1,13 @@
 // lib/widgets/connection_wrapper.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:chatbox/services/auth_service.dart';
 import 'package:chatbox/services/stream_chat_service.dart';
 import 'package:chatbox/services/token_service.dart';
+import 'package:chatbox/services/chat_service.dart';
 import 'package:chatbox/constants/colors.dart';
 
 class ConnectionWrapper extends StatefulWidget {
@@ -18,11 +21,59 @@ class ConnectionWrapper extends StatefulWidget {
 
 class _ConnectionWrapperState extends State<ConnectionWrapper> {
   bool _isConnecting = false;
+  bool _wasOffline = false;
+  late Connectivity _connectivity;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
+    _connectivity = Connectivity();
+    _setupConnectivityMonitoring();
     // Connection will be checked when auth state changes
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  void _setupConnectivityMonitoring() {
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) async {
+      final result = results.isNotEmpty
+          ? results.first
+          : ConnectivityResult.none;
+      final isOnline = result != ConnectivityResult.none;
+
+      if (isOnline && _wasOffline) {
+        // Came back online, trigger sync
+        _wasOffline = false;
+        await _syncWhenOnline();
+      } else if (!isOnline) {
+        _wasOffline = true;
+      }
+    });
+  }
+
+  Future<void> _syncWhenOnline() async {
+    try {
+      final chatService = Provider.of<ChatService>(context, listen: false);
+      await chatService.processQueuedMessages();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Synced offline messages'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Failed to sync when coming online: $e');
+    }
   }
 
   Future<void> _checkConnection() async {
@@ -133,63 +184,47 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
           );
         }
 
-        // Show connection lost screen if authenticated but not connected
-        if (!streamService.isConnected) {
-          return Scaffold(
-            backgroundColor: AppColors.background,
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.danger.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.wifi_off,
-                      size: 40,
-                      color: AppColors.danger,
-                    ),
+        // Always show the child widget, even when not connected
+        // Add an offline indicator banner if not connected
+        return Stack(
+          children: [
+            widget.child,
+            if (!streamService.isConnected)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: AppColors.danger,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
                   ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Connection lost',
-                    style: TextStyle(
-                      fontSize: 20,
-                      color: AppColors.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Unable to connect to chat service',
-                    style: TextStyle(fontSize: 14, color: AppColors.grey600),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _checkConnection,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Reconnect'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
+                  child: Row(
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Waiting for network...',
+                        style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
-                    ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: _checkConnection,
+                        child: Text(
+                          'Retry',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          );
-        }
-
-        // User is authenticated and connected, show the child
-        return widget.child;
+          ],
+        );
       },
     );
   }

@@ -31,6 +31,7 @@ class ChatMessage {
   final int replyCount;
   final bool isEdited;
   final DateTime? editedAt;
+  final bool isEncrypted;
 
   const ChatMessage({
     required this.originalMessage,
@@ -40,6 +41,7 @@ class ChatMessage {
     required this.replyCount,
     this.isEdited = false,
     this.editedAt,
+    this.isEncrypted = false,
   });
 
   // Create from GetStream Message
@@ -49,20 +51,24 @@ class ChatMessage {
       message.attachments ?? [],
     );
 
+    // Check if message is encrypted (look for encryption flag in extraData)
+    final isEncrypted =
+        message.extraData?['encrypted'] == true ||
+        message.extraData?['isEncrypted'] == true;
+
     return ChatMessage(
       originalMessage: message,
       messageType: messageType,
       customAttachments: customAttachments,
       reactions:
-          message.reactionCounts?.entries
+          message.reactionGroups?.entries
               .map(
                 (entry) => MessageReaction(
                   type: entry.key,
-                  count: entry.value,
-                  userIds:
-                      (message.reactionScores?[entry.key] as List<dynamic>?)
-                          ?.cast<String>() ??
-                      [],
+                  count: (entry.value as List<Reaction>).length,
+                  userIds: (entry.value as List<Reaction>)
+                      .map((reaction) => reaction.userId ?? '')
+                      .toList(),
                 ),
               )
               .toList() ??
@@ -70,6 +76,7 @@ class ChatMessage {
       replyCount: message.replyCount ?? 0,
       isEdited: message.updatedAt.isAfter(message.createdAt),
       editedAt: message.updatedAt,
+      isEncrypted: isEncrypted,
     );
   }
 

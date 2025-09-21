@@ -2,77 +2,174 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum AppTheme { light, dark, system }
+class ChatTheme {
+  final String id;
+  final String name;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final Color backgroundColor;
+  final Color surfaceColor;
+  final Color textColor;
+  final String? wallpaperUrl;
+  final bool isDark;
+
+  const ChatTheme({
+    required this.id,
+    required this.name,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.backgroundColor,
+    required this.surfaceColor,
+    required this.textColor,
+    this.wallpaperUrl,
+    this.isDark = false,
+  });
+
+  // Predefined themes
+  static const ChatTheme light = ChatTheme(
+    id: 'light',
+    name: 'Light',
+    primaryColor: Color(0xFF007AFF),
+    secondaryColor: Color(0xFF5856D6),
+    backgroundColor: Color(0xFFE5E5EA),
+    surfaceColor: Colors.white,
+    textColor: Color(0xFF000000),
+    isDark: false,
+  );
+
+  static const ChatTheme dark = ChatTheme(
+    id: 'dark',
+    name: 'Dark',
+    primaryColor: Color(0xFF007AFF),
+    secondaryColor: Color(0xFF5856D6),
+    backgroundColor: Color(0xFF000000),
+    surfaceColor: Color(0xFF1C1C1E),
+    textColor: Color(0xFFFFFFFF),
+    isDark: true,
+  );
+
+  static const ChatTheme blue = ChatTheme(
+    id: 'blue',
+    name: 'Blue Ocean',
+    primaryColor: Color(0xFF0066CC),
+    secondaryColor: Color(0xFF00A3CC),
+    backgroundColor: Color(0xFFE6F3FF),
+    surfaceColor: Colors.white,
+    textColor: Color(0xFF003366),
+    isDark: false,
+  );
+
+  static const ChatTheme purple = ChatTheme(
+    id: 'purple',
+    name: 'Purple Dream',
+    primaryColor: Color(0xFF8B5CF6),
+    secondaryColor: Color(0xFFA855F7),
+    backgroundColor: Color(0xFFF3E8FF),
+    surfaceColor: Colors.white,
+    textColor: Color(0xFF581C87),
+    isDark: false,
+  );
+
+  static const ChatTheme green = ChatTheme(
+    id: 'green',
+    name: 'Forest Green',
+    primaryColor: Color(0xFF059669),
+    secondaryColor: Color(0xFF10B981),
+    backgroundColor: Color(0xFFECFDF5),
+    surfaceColor: Colors.white,
+    textColor: Color(0xFF064E3B),
+    isDark: false,
+  );
+
+  static List<ChatTheme> get predefinedThemes => [
+    light,
+    dark,
+    blue,
+    purple,
+    green,
+  ];
+}
 
 class ThemeProvider extends ChangeNotifier {
-  AppTheme _currentTheme = AppTheme.system;
-  bool _useMaterial3 = true;
+  static const String _themeKey = 'selected_theme';
+  static const String _wallpaperKey = 'chat_wallpaper';
 
-  AppTheme get currentTheme => _currentTheme;
-  bool get useMaterial3 => _useMaterial3;
+  ChatTheme _currentTheme = ChatTheme.light;
+  String? _wallpaperUrl;
 
-  ThemeMode get themeMode {
-    switch (_currentTheme) {
-      case AppTheme.light:
-        return ThemeMode.light;
-      case AppTheme.dark:
-        return ThemeMode.dark;
-      case AppTheme.system:
-        return ThemeMode.system;
-    }
-  }
+  ChatTheme get currentTheme => _currentTheme;
+  String? get wallpaperUrl => _wallpaperUrl;
 
   ThemeProvider() {
-    _loadSettings();
+    _loadTheme();
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> _loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final themeString = prefs.getString('app_theme') ?? 'system';
-    final useMaterial3 = prefs.getBool('use_material3') ?? true;
+    final themeId = prefs.getString(_themeKey) ?? 'light';
+    final wallpaper = prefs.getString(_wallpaperKey);
 
-    _currentTheme = AppTheme.values.firstWhere(
-      (theme) => theme.toString() == 'AppTheme.$themeString',
-      orElse: () => AppTheme.system,
+    _currentTheme = ChatTheme.predefinedThemes.firstWhere(
+      (theme) => theme.id == themeId,
+      orElse: () => ChatTheme.light,
     );
-    _useMaterial3 = useMaterial3;
 
+    _wallpaperUrl = wallpaper;
     notifyListeners();
   }
 
-  Future<void> setTheme(AppTheme theme) async {
+  Future<void> setTheme(ChatTheme theme) async {
     _currentTheme = theme;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('app_theme', theme.toString().split('.').last);
+    await prefs.setString(_themeKey, theme.id);
     notifyListeners();
   }
 
-  Future<void> toggleMaterial3() async {
-    _useMaterial3 = !_useMaterial3;
+  Future<void> setWallpaper(String? url) async {
+    _wallpaperUrl = url;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('use_material3', _useMaterial3);
+    if (url != null) {
+      await prefs.setString(_wallpaperKey, url);
+    } else {
+      await prefs.remove(_wallpaperKey);
+    }
     notifyListeners();
   }
 
-  String getThemeDisplayName(AppTheme theme) {
-    switch (theme) {
-      case AppTheme.light:
-        return 'Light';
-      case AppTheme.dark:
-        return 'Dark';
-      case AppTheme.system:
-        return 'System';
-    }
+  Future<void> resetToDefault() async {
+    _currentTheme = ChatTheme.light;
+    _wallpaperUrl = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_themeKey, 'light');
+    await prefs.remove(_wallpaperKey);
+    notifyListeners();
   }
 
-  IconData getThemeIcon(AppTheme theme) {
-    switch (theme) {
-      case AppTheme.light:
-        return Icons.light_mode;
-      case AppTheme.dark:
-        return Icons.dark_mode;
-      case AppTheme.system:
-        return Icons.settings_brightness;
-    }
+  ThemeData getThemeData() {
+    return ThemeData(
+      primaryColor: _currentTheme.primaryColor,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _currentTheme.primaryColor,
+        brightness: _currentTheme.isDark ? Brightness.dark : Brightness.light,
+        primary: _currentTheme.primaryColor,
+        secondary: _currentTheme.secondaryColor,
+        background: _currentTheme.backgroundColor,
+        surface: _currentTheme.surfaceColor,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onBackground: _currentTheme.textColor,
+        onSurface: _currentTheme.textColor,
+      ),
+      scaffoldBackgroundColor: _currentTheme.backgroundColor,
+      appBarTheme: AppBarTheme(
+        backgroundColor: _currentTheme.surfaceColor,
+        foregroundColor: _currentTheme.textColor,
+        elevation: 0,
+      ),
+      cardColor: _currentTheme.surfaceColor,
+      dialogBackgroundColor: _currentTheme.surfaceColor,
+      fontFamily: 'Inter',
+      useMaterial3: true,
+    );
   }
 }

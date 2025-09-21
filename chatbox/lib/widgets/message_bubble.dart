@@ -11,8 +11,10 @@ class MessageBubble extends StatelessWidget {
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
   final VoidCallback? onReact;
+  final VoidCallback? onForward;
   final bool showStatus;
   final bool showTimestamp;
+  final bool isEncrypted;
 
   const MessageBubble({
     super.key,
@@ -22,8 +24,10 @@ class MessageBubble extends StatelessWidget {
     this.onEdit,
     this.onDelete,
     this.onReact,
+    this.onForward,
     this.showStatus = true,
     this.showTimestamp = true,
+    this.isEncrypted = false,
   });
 
   @override
@@ -90,7 +94,32 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildReplyPreview() {
+  Widget _buildReplyPreview(BuildContext context) {
+    // Get the parent message from the channel state
+    Message? parentMessage;
+    try {
+      // Access the channel through context to get parent message
+      final channel = StreamChannel.of(context).channel;
+      if (message.parentId != null) {
+        // Try to find the parent message in recent messages
+        final recentMessages = channel.state?.messages ?? [];
+        parentMessage = recentMessages.firstWhere(
+          (msg) => msg.id == message.parentId,
+          orElse: () =>
+              Message(id: message.parentId!, text: 'Message not found'),
+        );
+      }
+    } catch (e) {
+      // Fallback if we can't access the channel
+      parentMessage = Message(
+        id: message.parentId!,
+        text: 'Replied to message',
+      );
+    }
+
+    final parentText = parentMessage?.text ?? 'Attachment';
+    final parentUserName = parentMessage?.user?.name ?? 'Unknown';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(8),
@@ -108,15 +137,28 @@ class MessageBubble extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
           ),
           Expanded(
-            child: Text(
-              'Replied to message', // TODO: Get actual parent message text
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.grey600,
-                fontStyle: FontStyle.italic,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Replying to $parentUserName',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  parentText,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.grey600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
         ],
@@ -255,6 +297,27 @@ class MessageBubble extends StatelessWidget {
                 ),
               ),
             );
+          case 'sticker':
+            return Container(
+              margin: const EdgeInsets.only(top: 8),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  attachment.assetUrl ?? '',
+                  height: 120,
+                  width: 120,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 120,
+                      width: 120,
+                      color: AppColors.grey200,
+                      child: Icon(Icons.broken_image, color: AppColors.grey600),
+                    );
+                  },
+                ),
+              ),
+            );
           default:
             return const SizedBox.shrink();
         }
@@ -336,8 +399,24 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Reply preview
-            if (message.parentId != null) _buildReplyPreview(),
+            // Encryption indicator and reply preview
+            Row(
+              children: [
+                if (isEncrypted)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8, bottom: 4),
+                    child: Icon(
+                      Icons.lock,
+                      size: 14,
+                      color: isMyMessage ? Colors.white70 : AppColors.grey600,
+                    ),
+                  ),
+                if (message.parentId != null)
+                  Expanded(child: _buildReplyPreview(context)),
+              ],
+            ),
+            if (message.parentId != null && !isEncrypted)
+              _buildReplyPreview(context),
 
             // Message text
             if (message.text?.isNotEmpty == true)
@@ -393,6 +472,15 @@ class MessageBubble extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   onReact!();
+                },
+              ),
+            if (onForward != null)
+              ListTile(
+                leading: Icon(Icons.forward, color: AppColors.primary),
+                title: const Text('Forward'),
+                onTap: () {
+                  Navigator.pop(context);
+                  onForward!();
                 },
               ),
             if (isMyMessage && onDelete != null)

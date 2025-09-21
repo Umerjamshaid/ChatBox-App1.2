@@ -1,11 +1,12 @@
 // lib/providers/message_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:chatbox/services/chat_service.dart';
+import 'package:chatbox/models/app_models.dart';
 
 class MessageProvider with ChangeNotifier {
   final ChatService _chatService;
 
-  List<Map<String, dynamic>> _messages = [];
+  List<AppMessage> _messages = [];
   bool _isLoading = false;
   bool _isLoadingMore = false;
   String? _error;
@@ -19,7 +20,7 @@ class MessageProvider with ChangeNotifier {
   }
 
   // Getters
-  List<Map<String, dynamic>> get messages => _messages;
+  List<AppMessage> get messages => _messages;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
   String? get error => _error;
@@ -30,7 +31,7 @@ class MessageProvider with ChangeNotifier {
   void _initialize() {
     // Listen to message updates from ChatService
     _chatService.messagesStream.listen((messages) {
-      _messages = messages;
+      _messages = messages.map((m) => AppMessage.fromJson(m)).toList();
       _error = null;
       notifyListeners();
     });
@@ -157,18 +158,19 @@ class MessageProvider with ChangeNotifier {
   }
 
   /// Get message by ID
-  Map<String, dynamic>? getMessageById(String messageId) {
-    return _messages.firstWhere(
-      (message) => message['id'] == messageId,
-      orElse: () => {},
-    );
+  AppMessage? getMessageById(String messageId) {
+    try {
+      return _messages.firstWhere((message) => message.id == messageId);
+    } catch (e) {
+      return null;
+    }
   }
 
   /// Get messages for current channel
-  List<Map<String, dynamic>> getCurrentChannelMessages() {
+  List<AppMessage> getCurrentChannelMessages() {
     if (_currentChannelId == null) return [];
     return _messages
-        .where((message) => message['channelId'] == _currentChannelId)
+        .where((message) => message.channelId == _currentChannelId)
         .toList();
   }
 
@@ -177,9 +179,9 @@ class MessageProvider with ChangeNotifier {
     return _messages
         .where(
           (message) =>
-              message['channelId'] == channelId &&
-              message['status'] != 'read' &&
-              message['userId'] != _chatService.currentChannelId,
+              message.channelId == channelId &&
+              message.status != 'read' &&
+              message.userId != _chatService.currentUserId,
         ) // Not from current user
         .length;
   }
@@ -190,9 +192,9 @@ class MessageProvider with ChangeNotifier {
 
     try {
       for (var message in _messages) {
-        if (message['channelId'] == _currentChannelId &&
-            message['status'] != 'read') {
-          message['status'] = 'read';
+        if (message.channelId == _currentChannelId &&
+            message.status != 'read') {
+          message.status = 'read';
         }
       }
       notifyListeners();

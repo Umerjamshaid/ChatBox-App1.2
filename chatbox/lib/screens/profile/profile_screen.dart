@@ -410,6 +410,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Navigator.pushNamed(context, '/account_settings');
               },
             ),
+
+            // Backup Settings
+            ListTile(
+              leading: Icon(Icons.backup, color: AppColors.primary),
+              title: const Text('Backup & Restore'),
+              subtitle: const Text('Backup your chats to Google Drive'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pushNamed(context, '/backup_settings');
+              },
+            ),
+
+            // Translation Settings
+            ListTile(
+              leading: Icon(Icons.translate, color: AppColors.primary),
+              title: const Text('Translation'),
+              subtitle: const Text('Language translation settings'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pushNamed(context, '/translation_settings');
+              },
+            ),
+
+            // Speech Settings
+            ListTile(
+              leading: Icon(Icons.mic, color: AppColors.primary),
+              title: const Text('Speech & Voice'),
+              subtitle: const Text('Text-to-speech and speech-to-text'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pushNamed(context, '/speech_settings');
+              },
+            ),
           ],
         ),
       ),

@@ -19,7 +19,10 @@ import 'package:chatbox/screens/media/media_gallery_screen.dart';
 import 'package:chatbox/screens/groups/group_info_screen.dart';
 import 'package:chatbox/screens/calls/voice_call_screen.dart';
 import 'package:chatbox/screens/calls/video_call_screen.dart';
+import 'package:chatbox/screens/chat/message_forward_screen.dart';
+import 'package:chatbox/screens/chat/schedule_message_screen.dart';
 import 'package:chatbox/services/group_service.dart';
+import 'package:chatbox/providers/theme_provider.dart';
 import 'package:file_picker/file_picker.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -45,6 +48,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   List<Member> _groupMembers = [];
   bool _isGroup = false;
   bool _isBroadcastMode = false;
+  bool _showStickers = false;
 
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
@@ -86,39 +90,56 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return StreamChannel(
       channel: widget.channel,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: _buildCustomAppBar(),
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Messages List with Custom Design
-              Expanded(
-                child: Stack(
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return Scaffold(
+            backgroundColor: themeProvider.currentTheme.backgroundColor,
+            appBar: _buildCustomAppBar(),
+            body: SafeArea(
+              child: Container(
+                decoration: themeProvider.wallpaperUrl != null
+                    ? BoxDecoration(
+                        image: DecorationImage(
+                          image: NetworkImage(themeProvider.wallpaperUrl!),
+                          fit: BoxFit.cover,
+                          opacity: 0.1,
+                        ),
+                      )
+                    : null,
+                child: Column(
                   children: [
-                    StreamMessageListView(
-                      messageBuilder: _buildCustomMessage,
-                      showScrollToBottom: true,
-                      scrollPhysics: const BouncingScrollPhysics(),
-                      loadingBuilder: (context) => _buildLoadingIndicator(),
-                      emptyBuilder: (context) => _buildEmptyState(),
-                      errorBuilder: (context, error) => _buildErrorState(error),
+                    // Messages List with Custom Design
+                    Expanded(
+                      child: Stack(
+                        children: [
+                          StreamMessageListView(
+                            messageBuilder: _buildCustomMessage,
+                            showScrollToBottom: true,
+                            scrollPhysics: const BouncingScrollPhysics(),
+                            loadingBuilder: (context) =>
+                                _buildLoadingIndicator(),
+                            emptyBuilder: (context) => _buildEmptyState(),
+                            errorBuilder: (context, error) =>
+                                _buildErrorState(error),
+                          ),
+
+                          // Reply Preview
+                          if (_replyingTo != null) _buildReplyPreview(),
+
+                          // Voice Recording Overlay
+                          if (_isRecording) _buildVoiceRecordingOverlay(),
+                        ],
+                      ),
                     ),
 
-                    // Reply Preview
-                    if (_replyingTo != null) _buildReplyPreview(),
-
-                    // Voice Recording Overlay
-                    if (_isRecording) _buildVoiceRecordingOverlay(),
+                    // Custom Message Input
+                    _buildCustomMessageInput(),
                   ],
                 ),
               ),
-
-              // Custom Message Input
-              _buildCustomMessageInput(),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -262,6 +283,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     final message = details.message;
     final isMyMessage = _isMessageFromCurrentUser(message);
 
+    // Check if message is encrypted
+    final isEncrypted =
+        message.extraData?['encrypted'] == true ||
+        message.extraData?['isEncrypted'] == true;
+
     return MessageBubble(
       message: message,
       isMyMessage: isMyMessage,
@@ -269,8 +295,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       onEdit: () => _setEditMessage(message),
       onDelete: () => _deleteMessage(message),
       onReact: () => _showReactionPicker(message),
+      onForward: () => _forwardMessage(message),
       showStatus: true,
       showTimestamp: true,
+      isEncrypted: isEncrypted,
     );
   }
 
@@ -369,6 +397,15 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                     setState(() => _showEmojiPicker = !_showEmojiPicker),
               ),
 
+              // Sticker Button
+              IconButton(
+                icon: Icon(
+                  Icons.sticky_note_2,
+                  color: _showStickers ? AppColors.primary : AppColors.grey600,
+                ),
+                onPressed: () => setState(() => _showStickers = !_showStickers),
+              ),
+
               // Message Input Field
               Expanded(
                 child: Container(
@@ -415,6 +452,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                   onPressed: _showMentionsList,
                 ),
 
+              // Schedule Button
+              IconButton(
+                icon: Icon(Icons.schedule, color: AppColors.grey600),
+                onPressed: _scheduleMessage,
+                tooltip: 'Schedule message',
+              ),
+
               // Send Button
               AnimatedBuilder(
                 animation: _fabAnimation,
@@ -434,8 +478,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             ],
           ),
 
-          // Emoji Picker
-          if (_showEmojiPicker) _buildEmojiPicker(),
+          // Emoji/Sticker Picker
+          if (_showEmojiPicker || _showStickers) _buildEmojiStickerPicker(),
         ],
       ),
     );
@@ -472,7 +516,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildEmojiPicker() {
+  Widget _buildEmojiStickerPicker() {
     return SizedBox(
       height: 250,
       child: EmojiPicker(
@@ -480,8 +524,34 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           _messageController.text += emoji;
           setState(() {});
         },
+        onStickerSelected: (stickerPath) {
+          // Send sticker as message
+          _sendStickerMessage(stickerPath);
+        },
       ),
     );
+  }
+
+  Future<void> _sendStickerMessage(String stickerPath) async {
+    try {
+      final message = Message(
+        attachments: [
+          Attachment(type: 'sticker', assetUrl: stickerPath, title: 'Sticker'),
+        ],
+        parentId: _replyingTo?.id,
+      );
+
+      await widget.channel.sendMessage(message);
+
+      setState(() {
+        _replyingTo = null;
+        _showStickers = false;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to send sticker: $e')));
+    }
   }
 
   Widget _buildLoadingIndicator() {
@@ -648,6 +718,43 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               }).toList(),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _forwardMessage(Message message) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MessageForwardScreen(messageToForward: message),
+      ),
+    );
+  }
+
+  void _scheduleMessage() {
+    if (_messageController.text.trim().isEmpty && _selectedAttachment == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a message to schedule')),
+      );
+      return;
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScheduleMessageScreen(
+          channel: widget.channel,
+          initialText: _messageController.text.trim(),
+          initialAttachments: _selectedAttachment != null
+              ? [
+                  Attachment(
+                    type: 'image',
+                    assetUrl: _selectedAttachment!.path,
+                    title: _selectedAttachment!.name,
+                  ),
+                ]
+              : [],
         ),
       ),
     );
