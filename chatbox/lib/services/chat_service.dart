@@ -138,7 +138,7 @@ class ChatService {
               'type': channel.type,
               'name': channel.name ?? 'Unnamed',
               'memberCount': channel.memberCount ?? 0,
-              'lastMessage': channel.lastMessage?.text ?? '',
+              'lastMessage': '', // Will be populated from messages
               'lastMessageAt': channel.lastMessageAt?.toIso8601String(),
               'image': channel.image,
             },
