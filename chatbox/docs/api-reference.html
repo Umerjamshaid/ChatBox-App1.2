@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBox API Reference</title>
+    <link rel="icon" href="../assets/Messaging - Chatbox App Design (Community).png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --primary-dark: #e55a5a;
+            --secondary-color: #667eea;
+            --accent-color: #10b981;
+
+            /* Dark theme colors */
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --bg-hover: #333333;
+
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --text-accent: #FF6B6B;
+
+            --border-color: #374151;
+            --border-light: #4b5563;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+            --radius: 8px;
+            --radius-lg: 12px;
+
+            --sidebar-width: 280px;
+            --header-height: 64px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo img {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .github-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .github-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .download-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: var(--header-height);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-right: var(--sidebar-width);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* Right Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            right: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 40;
+        }
+
+        .sidebar-content {
+            padding: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-item {
+            display: block;
+            padding: 6px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 48px 0 16px 0;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin: 32px 0 12px 0;
+            color: var(--text-primary);
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* API Components */
+        .api-section {
+            margin-bottom: 48px;
+        }
+
+        .api-method {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin: 24px 0;
+            position: relative;
+        }
+
+        .api-method-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .method-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .method-get { background: var(--accent-color); color: white; }
+        .method-post { background: var(--primary-color); color: white; }
+        .method-put { background: var(--secondary-color); color: white; }
+        .method-delete { background: #ef4444; color: white; }
+
+        .endpoint {
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .api-description {
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .parameters, .responses {
+            margin-top: 20px;
+        }
+
+        .param-table, .response-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        .param-table th, .param-table td,
+        .response-table th, .response-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .param-table th, .response-table th {
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .param-required {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        .param-type {
+            font-family: 'SF Mono', monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--accent-color);
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--bg-tertiary);
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: var(--radius);
+            margin: 20px 0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .code-block::before {
+            content: '$ ';
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .code-block::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+
+        /* Tabs */
+        .tabs {
+            margin: 32px 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: var(--radius) var(--radius) 0 0;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-secondary);
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Links */
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--primary-dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-right: 0;
+            }
+
+            .header {
+                padding: 0 16px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .content {
+                padding: 32px 20px;
+            }
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 60;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+
+    <header class="header">
+        <div class="header-left">
+            <a href="index.html" class="logo">
+                <img src="../assets/Messaging - Chatbox App Design (Community).png" alt="ChatBox">
+                ChatBox
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Docs</a>
+                <a href="api-reference.html" class="nav-link">API</a>
+                <a href="examples.html" class="nav-link">Examples</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <a href="https://github.com/Umerjamshaid/ChatBox-App1.2" class="github-btn">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+            <a href="../build/app/outputs/flutter-apk/app-release.apk" class="download-btn" download>
+                <i class="fas fa-download"></i>
+                Download APK
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <main class="main">
+            <div class="content">
+                <h1><i class="fas fa-code"></i> API Reference</h1>
+                <p>Complete API documentation for ChatBox services and components.</p>
+
+                <!-- Authentication API -->
+                <div class="api-section">
+                    <h2><i class="fas fa-user-shield"></i> Authentication API</h2>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint">/auth/login</span>
+                        </div>
+                        <p class="api-description">Authenticate user with email and password</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>email</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>User's email address</td>
+                                </tr>
+                                <tr>
+                                    <td>password</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>User's password</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+{
+  "success": true,
+  "user": {
+    "id": "user_123",
+    "email": "user@example.com",
+    "name": "John Doe",
+    "token": "jwt_token_here"
+  }
+}
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint">/auth/register</span>
+                        </div>
+                        <p class="api-description">Register a new user account</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>email</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>User's email address</td>
+                                </tr>
+                                <tr>
+                                    <td>password</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>User's password (min 8 characters)</td>
+                                </tr>
+                                <tr>
+                                    <td>name</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>User's display name</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Messages API -->
+                <div class="api-section">
+                    <h2><i class="fas fa-comments"></i> Messages API</h2>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint">/channels/{channelId}/messages</span>
+                        </div>
+                        <p class="api-description">Retrieve messages for a specific channel</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>limit</td>
+                                    <td><span class="param-type">integer</span></td>
+                                    <td>No</td>
+                                    <td>Number of messages to retrieve (default: 50, max: 100)</td>
+                                </tr>
+                                <tr>
+                                    <td>before</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td>No</td>
+                                    <td>Message ID to paginate before</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+{
+  "messages": [
+    {
+      "id": "msg_123",
+      "text": "Hello world!",
+      "userId": "user_456",
+      "userName": "John Doe",
+      "createdAt": "2024-01-15T10:30:00Z",
+      "status": "sent",
+      "reactions": []
+    }
+  ],
+  "hasMore": true
+}
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint">/channels/{channelId}/messages</span>
+                        </div>
+                        <p class="api-description">Send a new message to a channel</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>text</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>Message content</td>
+                                </tr>
+                                <tr>
+                                    <td>attachments</td>
+                                    <td><span class="param-type">array</span></td>
+                                    <td>No</td>
+                                    <td>Array of file attachments</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Channels API -->
+                <div class="api-section">
+                    <h2><i class="fas fa-hashtag"></i> Channels API</h2>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-get">GET</span>
+                            <span class="endpoint">/channels</span>
+                        </div>
+                        <p class="api-description">Get user's channels</p>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+{
+  "channels": [
+    {
+      "id": "channel_123",
+      "name": "General",
+      "type": "public",
+      "memberCount": 25,
+      "lastMessage": {
+        "text": "Welcome to the team!",
+        "userName": "Admin",
+        "createdAt": "2024-01-15T09:00:00Z"
+      }
+    }
+  ]
+}
+                        </div>
+                    </div>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint">/channels</span>
+                        </div>
+                        <p class="api-description">Create a new channel</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>name</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>Channel name</td>
+                                </tr>
+                                <tr>
+                                    <td>type</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td>No</td>
+                                    <td>Channel type (public/private)</td>
+                                </tr>
+                                <tr>
+                                    <td>members</td>
+                                    <td><span class="param-type">array</span></td>
+                                    <td>No</td>
+                                    <td>Array of user IDs to invite</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Voice API -->
+                <div class="api-section">
+                    <h2><i class="fas fa-microphone"></i> Voice API</h2>
+
+                    <div class="api-method">
+                        <div class="api-method-header">
+                            <span class="method-badge method-post">POST</span>
+                            <span class="endpoint">/voice/transcribe</span>
+                        </div>
+                        <p class="api-description">Transcribe audio to text</p>
+
+                        <h4>Parameters</h4>
+                        <table class="param-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Required</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>audio</td>
+                                    <td><span class="param-type">file</span></td>
+                                    <td><span class="param-required">Yes</span></td>
+                                    <td>Audio file (WAV, MP3, M4A)</td>
+                                </tr>
+                                <tr>
+                                    <td>language</td>
+                                    <td><span class="param-type">string</span></td>
+                                    <td>No</td>
+                                    <td>Language code (default: auto)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Response</h4>
+                        <div class="code-block">
+{
+  "text": "Hello, how are you today?",
+  "confidence": 0.95,
+  "language": "en-US",
+  "duration": 2.3
+}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SDK Reference -->
+                <div class="api-section">
+                    <h2><i class="fas fa-cubes"></i> Flutter SDK</h2>
+
+                    <div class="tabs">
+                        <div class="tab-buttons">
+                            <button class="tab-btn active" onclick="showTab('chat-service')">ChatService</button>
+                            <button class="tab-btn" onclick="showTab('message-provider')">MessageProvider</button>
+                            <button class="tab-btn" onclick="showTab('auth-service')">AuthService</button>
+                        </div>
+
+                        <div id="chat-service" class="tab-content active">
+                            <h3>ChatService Class</h3>
+                            <div class="code-block">
+class ChatService {
+  // Initialize service
+  Future<void> initialize();
+
+  // Channel operations
+  Future<void> loadChannels({int limit, int offset});
+  Future<Map<String, dynamic>> createChannel({
+    required String name,
+    required List<String> memberIds,
+    String? image
+  });
+
+  // Message operations
+  Future<void> loadMessages(String channelId, {int limit});
+  Future<Map<String, dynamic>> sendMessage(String channelId, String text);
+  Future<void> deleteMessage(String messageId);
+
+  // Real-time features
+  Stream<List<Map<String, dynamic>>> get channelsStream;
+  Stream<List<Map<String, dynamic>>> get messagesStream;
+}
+                            </div>
+                        </div>
+
+                        <div id="message-provider" class="tab-content">
+                            <h3>MessageProvider Class</h3>
+                            <div class="code-block">
+class MessageProvider with ChangeNotifier {
+  // Getters
+  List<AppMessage> get messages;
+  bool get isLoading;
+  String? get currentChannelId;
+
+  // Methods
+  Future<void> loadMessages(String channelId);
+  Future<Map<String, dynamic>?> sendMessage(String text);
+  Future<bool> deleteMessage(String messageId);
+  int getUnreadCount(String channelId);
+  Future<void> markAllAsRead();
+}
+                            </div>
+                        </div>
+
+                        <div id="auth-service" class="tab-content">
+                            <h3>AuthService Class</h3>
+                            <div class="code-block">
+class AuthService {
+  // Authentication methods
+  Future<UserModel?> signInWithEmail(String email, String password);
+  Future<UserModel?> signInWithGoogle();
+  Future<UserModel?> signUp(String email, String password, String name);
+  Future<void> signOut();
+
+  // User management
+  Future<void> updateProfile(UserModel user);
+  Future<void> changePassword(String currentPassword, String newPassword);
+  Future<void> deleteAccount();
+
+  // Session management
+  Stream<UserModel?> get authStateChanges;
+  UserModel? get currentUser;
+}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Codes -->
+                <div class="api-section">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Error Codes</h2>
+
+                    <table class="param-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>HTTP Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>AUTH_001</code></td>
+                                <td>Invalid credentials</td>
+                                <td>401</td>
+                            </tr>
+                            <tr>
+                                <td><code>AUTH_002</code></td>
+                                <td>Account not verified</td>
+                                <td>403</td>
+                            </tr>
+                            <tr>
+                                <td><code>MSG_001</code></td>
+                                <td>Message too long</td>
+                                <td>400</td>
+                            </tr>
+                            <tr>
+                                <td><code>CHAN_001</code></td>
+                                <td>Channel not found</td>
+                                <td>404</td>
+                            </tr>
+                            <tr>
+                                <td><code>VOICE_001</code></td>
+                                <td>Audio format not supported</td>
+                                <td>400</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">API Reference</div>
+                    <a href="#authentication-api" class="sidebar-item" onclick="showSection('authentication-api')">
+                        <i class="fas fa-user-shield"></i> Authentication
+                    </a>
+                    <a href="#messages-api" class="sidebar-item" onclick="showSection('messages-api')">
+                        <i class="fas fa-comments"></i> Messages
+                    </a>
+                    <a href="#channels-api" class="sidebar-item" onclick="showSection('channels-api')">
+                        <i class="fas fa-hashtag"></i> Channels
+                    </a>
+                    <a href="#voice-api" class="sidebar-item" onclick="showSection('voice-api')">
+                        <i class="fas fa-microphone"></i> Voice
+                    </a>
+                    <a href="#flutter-sdk" class="sidebar-item" onclick="showSection('flutter-sdk')">
+                        <i class="fas fa-cubes"></i> Flutter SDK
+                    </a>
+                    <a href="#error-codes" class="sidebar-item" onclick="showSection('error-codes')">
+                        <i class="fas fa-exclamation-triangle"></i> Error Codes
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Resources</div>
+                    <a href="index.html" class="sidebar-item">
+                        <i class="fas fa-home"></i> Documentation
+                    </a>
+                    <a href="examples.html" class="sidebar-item">
+                        <i class="fas fa-code"></i> Examples
+                    </a>
+                    <a href="changelog.html" class="sidebar-item">
+                        <i class="fas fa-history"></i> Changelog
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Tab functionality
+        function showTab(tabId) {
+            // Hide all tab contents
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Show selected tab
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+
+            // Update active tab button
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+
+            event.target.classList.add('active');
+        }
+
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

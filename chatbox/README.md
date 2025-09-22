@@ -19,7 +19,7 @@
 
 **Chat without the hassle, with real-time messaging that feels like a party!** 🎈
 
-[📱 Download APK](build/app/outputs/flutter-apk/app-release.apk) • [🌐 Live Demo](#live-demo) • [📖 Documentation](docs/index.html) • [🐛 Report Bug](https://github.com/yourusername/chatbox-app/issues)
+[📱 Download APK](build/app/outputs/flutter-apk/app-release.apk) • [🌐 Live Demo](#live-demo) • [📖 Documentation](docs/index.html) • [🐛 Report Bug](https://github.com/Umerjamshaid/ChatBox-App1.2/issues)
 
 ---
 
@@ -523,6 +523,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 - 📖 **Documentation**: [View Docs](docs/index.html) - Complete user guide
 - 📦 **Pub.dev**: [chatbox](https://pub.dev/packages/chatbox)
 - 🏠 **Website**: [chatbox.dev](https://chatbox.dev)
+- 🐙 **GitHub**: [Umerjamshaid/ChatBox-App1.2](https://github.com/Umerjamshaid/ChatBox-App1.2)
 
 ## 🖥️ Hosting Recommendations
 

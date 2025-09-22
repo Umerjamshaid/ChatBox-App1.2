@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBox Changelog</title>
+    <link rel="icon" href="../assets/Messaging - Chatbox App Design (Community).png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --primary-dark: #e55a5a;
+            --secondary-color: #667eea;
+            --accent-color: #10b981;
+
+            /* Dark theme colors */
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --bg-hover: #333333;
+
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --text-accent: #FF6B6B;
+
+            --border-color: #374151;
+            --border-light: #4b5563;
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+            --radius: 8px;
+            --radius-lg: 12px;
+
+            --sidebar-width: 280px;
+            --header-height: 64px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--header-height);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .logo img {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .github-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .github-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-light);
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            background: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .download-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            min-height: 100vh;
+            padding-top: var(--header-height);
+        }
+
+        /* Main Content */
+        .main {
+            flex: 1;
+            margin-right: var(--sidebar-width);
+            min-height: calc(100vh - var(--header-height));
+        }
+
+        .content {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 48px 32px;
+        }
+
+        /* Right Sidebar */
+        .sidebar {
+            position: fixed;
+            top: var(--header-height);
+            right: 0;
+            width: var(--sidebar-width);
+            height: calc(100vh - var(--header-height));
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 40;
+        }
+
+        .sidebar-content {
+            padding: 24px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .sidebar-item {
+            display: block;
+            padding: 6px 0;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-left: 2px solid transparent;
+        }
+
+        .sidebar-item:hover {
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 48px 0 16px 0;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+            margin: 32px 0 12px 0;
+            color: var(--text-primary);
+        }
+
+        p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Changelog Components */
+        .version-header {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin: 32px 0;
+            position: relative;
+        }
+
+        .version-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: var(--primary-color);
+            color: white;
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .version-date {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .changelog-section {
+            margin: 24px 0;
+        }
+
+        .changelog-section h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .changelog-section h4 i {
+            width: 16px;
+        }
+
+        .changelog-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .changelog-item {
+            display: flex;
+            gap: 12px;
+            padding: 8px 0;
+            align-items: flex-start;
+        }
+
+        .changelog-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .changelog-icon.added { background: var(--accent-color); }
+        .changelog-icon.changed { background: var(--secondary-color); }
+        .changelog-icon.fixed { background: var(--primary-color); }
+        .changelog-icon.removed { background: #ef4444; }
+        .changelog-icon.security { background: #f59e0b; }
+
+        .changelog-text {
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .changelog-text strong {
+            color: var(--text-primary);
+        }
+
+        .changelog-code {
+            font-family: 'SF Mono', Monaco, monospace;
+            background: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--accent-color);
+        }
+
+        /* Links */
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--primary-dark);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-right: 0;
+            }
+
+            .header {
+                padding: 0 16px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .content {
+                padding: 32px 20px;
+            }
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 60;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px;
+            border-radius: var(--radius);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--border-light);
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+
+    <header class="header">
+        <div class="header-left">
+            <a href="index.html" class="logo">
+                <img src="../assets/Messaging - Chatbox App Design (Community).png" alt="ChatBox">
+                ChatBox
+            </a>
+            <nav class="nav-links">
+                <a href="index.html" class="nav-link">Docs</a>
+                <a href="api-reference.html" class="nav-link">API</a>
+                <a href="examples.html" class="nav-link">Examples</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <a href="https://github.com/Umerjamshaid/ChatBox-App1.2" class="github-btn">
+                <i class="fab fa-github"></i>
+                GitHub
+            </a>
+            <a href="../build/app/outputs/flutter-apk/app-release.apk" class="download-btn" download>
+                <i class="fas fa-download"></i>
+                Download APK
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <main class="main">
+            <div class="content">
+                <h1><i class="fas fa-history"></i> Changelog</h1>
+                <p>Stay updated with the latest features, improvements, and bug fixes in ChatBox.</p>
+
+                <!-- Version 2.0.0 -->
+                <div class="version-header">
+                    <div class="version-badge">
+                        <i class="fas fa-rocket"></i>
+                        Version 2.0.0
+                    </div>
+                    <div class="version-date">December 15, 2024</div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-plus-circle" style="color: var(--accent-color);"></i> Added</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>End-to-End Encryption:</strong> Complete message encryption with ECDH key exchange
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>Database Integration:</strong> SQLite database with automatic migrations and performance monitoring
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Chunked Storage:</strong> SharedPreferences chunking for large data handling
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Type Safety:</strong> Complete model classes replacing Map<String, dynamic> usage
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Voice Commands:</strong> Advanced speech-to-text with multi-language support
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-exchange-alt" style="color: var(--secondary-color);"></i> Changed</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon changed"></div>
+                                <div class="changelog-text">
+                                    <strong>API Integration:</strong> Replaced mock data with real Stream Chat API calls
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>UI Framework:</strong> Migrated to modern Flutter widgets with improved animations
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Performance:</strong> Optimized serialization/deserialization with custom codecs
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-wrench" style="color: var(--primary-color);"></i> Fixed</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon fixed"></div>
+                                <div class="changelog-text">
+                                    <strong>Reaction API:</strong> Fixed deprecated <code class="changelog-code">reactionCounts</code> usage
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Unread Count:</strong> Corrected user ID comparison in message provider
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Memory Leaks:</strong> Fixed stream controller disposal issues
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Version 1.5.0 -->
+                <div class="version-header">
+                    <div class="version-badge">
+                        <i class="fas fa-star"></i>
+                        Version 1.5.0
+                    </div>
+                    <div class="version-date">October 28, 2024</div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-plus-circle" style="color: var(--accent-color);"></i> Added</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>Offline Support:</strong> Message queuing and automatic sync when back online
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Message Reactions:</strong> Emoji reactions with real-time updates
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Voice Messages:</strong> Record and send voice notes with waveform display
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Group Management:</strong> Create and manage group conversations
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-exchange-alt" style="color: var(--secondary-color);"></i> Changed</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon changed"></div>
+                                <div class="changelog-text">
+                                    <strong>UI Polish:</strong> Improved animations and transitions throughout the app
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Performance:</strong> Optimized message list rendering with virtualization
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Version 1.2.0 -->
+                <div class="version-header">
+                    <div class="version-badge">
+                        <i class="fas fa-bolt"></i>
+                        Version 1.2.0
+                    </div>
+                    <div class="version-date">August 15, 2024</div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-plus-circle" style="color: var(--accent-color);"></i> Added</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>Real-time Chat:</strong> WebSocket-based instant messaging
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Presence Indicators:</strong> Online/offline status for all users
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Typing Indicators:</strong> See when others are typing
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Message Search:</strong> Full-text search across all messages
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-wrench" style="color: var(--primary-color);"></i> Fixed</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon fixed"></div>
+                                <div class="changelog-text">
+                                    <strong>Connection Issues:</strong> Improved WebSocket reconnection logic
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Memory Usage:</strong> Reduced memory footprint for large chat histories
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Version 1.0.0 -->
+                <div class="version-header">
+                    <div class="version-badge">
+                        <i class="fas fa-flag-checkered"></i>
+                        Version 1.0.0
+                    </div>
+                    <div class="version-date">June 1, 2024</div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-plus-circle" style="color: var(--accent-color);"></i> Added</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>Initial Release:</strong> Basic messaging functionality with Firebase integration
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>User Authentication:</strong> Email/password and Google sign-in
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Channel System:</strong> Public and private conversation channels
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Media Sharing:</strong> Image and file sharing capabilities
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Push Notifications:</strong> Firebase Cloud Messaging integration
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Upcoming Features -->
+                <div class="version-header" style="border-color: var(--accent-color);">
+                    <div class="version-badge" style="background: var(--accent-color);">
+                        <i class="fas fa-eye"></i>
+                        Upcoming
+                    </div>
+                    <div class="version-date">Coming Soon</div>
+
+                    <div class="changelog-section">
+                        <h4><i class="fas fa-plus-circle" style="color: var(--accent-color);"></i> Planned Features</h4>
+                        <ul class="changelog-list">
+                            <li class="changelog-item">
+                                <div class="changelog-icon added"></div>
+                                <div class="changelog-text">
+                                    <strong>Video Calling:</strong> HD video calls with screen sharing
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Message Scheduling:</strong> Send messages at specific times
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Advanced Bots:</strong> AI-powered chat assistants
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Custom Themes:</strong> User-created color schemes
+                                </div>
+                            </li>
+                            <li class="changelog-item">
+                                <div class="changelog-text">
+                                    <strong>Message Translation:</strong> Real-time language translation
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Version History Link -->
+                <div style="text-align: center; margin: 48px 0; padding: 24px; background: var(--bg-secondary); border-radius: var(--radius-lg); border: 1px solid var(--border-color);">
+                    <h3><i class="fas fa-code-branch"></i> Full Version History</h3>
+                    <p style="margin-bottom: 16px;">View complete changelog and release notes on GitHub</p>
+                    <a href="https://github.com/Umerjamshaid/ChatBox-App1.2/releases" class="github-btn" style="display: inline-flex;">
+                        <i class="fab fa-github"></i>
+                        View All Releases
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Versions</div>
+                    <a href="#v2.0.0" class="sidebar-item active" onclick="showVersion('v2.0.0')">
+                        <i class="fas fa-tag"></i> v2.0.0 (Latest)
+                    </a>
+                    <a href="#v1.5.0" class="sidebar-item" onclick="showVersion('v1.5.0')">
+                        <i class="fas fa-tag"></i> v1.5.0
+                    </a>
+                    <a href="#v1.2.0" class="sidebar-item" onclick="showVersion('v1.2.0')">
+                        <i class="fas fa-tag"></i> v1.2.0
+                    </a>
+                    <a href="#v1.0.0" class="sidebar-item" onclick="showVersion('v1.0.0')">
+                        <i class="fas fa-tag"></i> v1.0.0
+                    </a>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Resources</div>
+                    <a href="index.html" class="sidebar-item">
+                        <i class="fas fa-home"></i> Documentation
+                    </a>
+                    <a href="api-reference.html" class="sidebar-item">
+                        <i class="fas fa-code"></i> API Reference
+                    </a>
+                    <a href="examples.html" class="sidebar-item">
+                        <i class="fas fa-code"></i> Examples
+                    </a>
+                    <a href="https://github.com/Umerjamshaid/ChatBox-App1.2/issues" class="sidebar-item">
+                        <i class="fas fa-bug"></i> Report Issues
+                    </a>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Mobile sidebar toggle
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('open');
+        }
+
+        // Version navigation
+        function showVersion(versionId) {
+            // Update active sidebar item
+            const sidebarItems = document.querySelectorAll('.sidebar-item');
+            sidebarItems.forEach(item => item.classList.remove('active'));
+
+            const activeItem = document.querySelector(`[onclick="showVersion('${versionId}')"]`);
+            if (activeItem) {
+                activeItem.classList.add('active');
+            }
+
+            // Scroll to version
+            const targetElement = document.querySelector(`[id="${versionId}"]`) || document.querySelector('.version-header');
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
