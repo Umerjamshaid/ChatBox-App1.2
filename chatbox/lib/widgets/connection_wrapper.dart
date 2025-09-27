@@ -19,9 +19,14 @@ class ConnectionWrapper extends StatefulWidget {
   State<ConnectionWrapper> createState() => _ConnectionWrapperState();
 }
 
-class _ConnectionWrapperState extends State<ConnectionWrapper> {
+class _ConnectionWrapperState extends State<ConnectionWrapper>
+    with WidgetsBindingObserver {
   bool _isConnecting = false;
   bool _wasOffline = false;
+  DateTime? _lastConnectionAttempt;
+  static const Duration _connectionCooldown = Duration(
+    seconds: 30,
+  ); // Prevent excessive reconnection attempts
   late Connectivity _connectivity;
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
@@ -30,13 +35,46 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
     super.initState();
     _connectivity = Connectivity();
     _setupConnectivityMonitoring();
+    WidgetsBinding.instance.addObserver(this);
     // Connection will be checked when auth state changes
   }
 
   @override
   void dispose() {
     _connectivitySubscription.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final streamService = Provider.of<StreamChatService>(
+      context,
+      listen: false,
+    );
+
+    switch (state) {
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        // App is going to background or being terminated
+        // Don't disconnect here as it might cause issues with push notifications
+        break;
+      case AppLifecycleState.resumed:
+        // App came back to foreground
+        // Only check connection if we haven't attempted recently
+        if (_lastConnectionAttempt == null ||
+            DateTime.now().difference(_lastConnectionAttempt!) >
+                _connectionCooldown) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _checkConnection();
+          });
+        }
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.hidden:
+        // Handle other states if needed
+        break;
+    }
   }
 
   void _setupConnectivityMonitoring() {
@@ -63,6 +101,13 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
       final chatService = Provider.of<ChatService>(context, listen: false);
       await chatService.processQueuedMessages();
 
+      // Only attempt connection if cooldown has passed
+      if (_lastConnectionAttempt == null ||
+          DateTime.now().difference(_lastConnectionAttempt!) >
+              _connectionCooldown) {
+        await _checkConnection();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -77,6 +122,7 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
   }
 
   Future<void> _checkConnection() async {
+    print('ConnectionWrapper: _checkConnection called');
     final authService = Provider.of<AuthService>(context, listen: false);
     final streamService = Provider.of<StreamChatService>(
       context,
@@ -84,45 +130,85 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
     );
 
     final firebaseUser = authService.getCurrentUser();
+    print(
+      'ConnectionWrapper: Firebase user: ${firebaseUser?.uid}, Stream connected: ${streamService.isConnected}',
+    );
 
-    if (firebaseUser != null && !streamService.isConnected) {
-      setState(() => _isConnecting = true);
+    // Check if we're already connecting or if connection attempt was too recent
+    if (_isConnecting ||
+        firebaseUser == null ||
+        streamService.isConnected ||
+        (_lastConnectionAttempt != null &&
+            DateTime.now().difference(_lastConnectionAttempt!) <
+                _connectionCooldown)) {
+      print(
+        'ConnectionWrapper: Skipping connection attempt - conditions not met',
+      );
+      return;
+    }
 
-      try {
-        print(
-          'ConnectionWrapper: Generating token for user ${firebaseUser.uid}',
+    _lastConnectionAttempt = DateTime.now();
+    setState(() => _isConnecting = true);
+
+    try {
+      print('ConnectionWrapper: Generating token for user ${firebaseUser.uid}');
+      final token = await TokenService.generateToken(firebaseUser.uid);
+      print('ConnectionWrapper: Token generated, connecting to StreamChat...');
+
+      await streamService.connectUser(
+        firebaseUser.uid,
+        token,
+        name: firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
+        image: firebaseUser.photoURL,
+      );
+
+      print('ConnectionWrapper: Successfully connected to StreamChat');
+      print(
+        'ConnectionWrapper: Stream service isConnected: ${streamService.isConnected}',
+      );
+      _lastConnectionAttempt = null; // Reset on success
+    } catch (e) {
+      print('ConnectionWrapper: Failed to reconnect: $e');
+
+      // Extract user-friendly error message
+      String errorMessage = 'Connection failed';
+      bool isRateLimited = false;
+
+      if (e.toString().contains('Too many requests') ||
+          e.toString().contains('429') ||
+          e.toString().contains('rate limit')) {
+        errorMessage =
+            'Too many connection attempts. Please wait before retrying.';
+        isRateLimited = true;
+        // Extend cooldown for rate limiting
+        _lastConnectionAttempt = DateTime.now().add(const Duration(minutes: 2));
+      } else if (e.toString().contains('already exist')) {
+        errorMessage =
+            'Multiple devices connected. This is normal for multi-device usage.';
+        // Don't show error for multi-device connections
+        return;
+      } else if (e.toString().contains('already getting connected')) {
+        errorMessage = 'Already connecting. Please wait.';
+      } else if (e.toString().contains('network') ||
+          e.toString().contains('timeout')) {
+        errorMessage = 'Network error. Check your connection.';
+      }
+
+      // Only show error snackbar for non-multi-device issues
+      if (mounted &&
+          !isRateLimited &&
+          !e.toString().contains('already exist')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            action: SnackBarAction(label: 'Retry', onPressed: _checkConnection),
+            duration: const Duration(seconds: 5),
+          ),
         );
-        final token = await TokenService.generateToken(firebaseUser.uid);
-        print(
-          'ConnectionWrapper: Token generated, connecting to StreamChat...',
-        );
-
-        await streamService.connectUser(
-          firebaseUser.uid,
-          token,
-          name: firebaseUser.displayName ?? firebaseUser.email!.split('@')[0],
-          image: firebaseUser.photoURL,
-        );
-
-        print('ConnectionWrapper: Successfully connected to StreamChat');
-      } catch (e) {
-        print('ConnectionWrapper: Failed to reconnect: $e');
-        // Show error but don't crash the app
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Connection failed: $e'),
-              action: SnackBarAction(
-                label: 'Retry',
-                onPressed: _checkConnection,
-              ),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isConnecting = false);
-        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConnecting = false);
       }
     }
   }
@@ -142,12 +228,29 @@ class _ConnectionWrapperState extends State<ConnectionWrapper> {
           return widget.child;
         }
 
-        // If user is authenticated but not connected, try to connect
-        if (!streamService.isConnected && !_isConnecting) {
+        // If user is authenticated but not connected, try to connect (with cooldown)
+        if (!streamService.isConnected &&
+            !_isConnecting &&
+            (_lastConnectionAttempt == null ||
+                DateTime.now().difference(_lastConnectionAttempt!) >
+                    _connectionCooldown)) {
+          print(
+            'ConnectionWrapper: User authenticated but not connected, starting connection...',
+          );
           // Start connection process
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _checkConnection();
           });
+        } else if (streamService.isConnected) {
+          print('ConnectionWrapper: User is connected, showing chat interface');
+        } else if (_isConnecting) {
+          print(
+            'ConnectionWrapper: Currently connecting, showing connecting screen',
+          );
+        } else {
+          print(
+            'ConnectionWrapper: Connection cooldown active or other condition preventing connection',
+          );
         }
 
         // Show connecting screen while connecting
